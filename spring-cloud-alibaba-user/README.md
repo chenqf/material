@@ -83,7 +83,7 @@ public class RestTemplateController {
 @SpringBootApplication
 @EnableFeignClients // 开启Feign
 public class UserApplication {
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         ConfigurableApplicationContext applicationContext = SpringApplication.run(UserApplication.class, args);
     }
 }
