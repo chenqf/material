@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class FeignController {
 
     @Autowired
-    StockFeignService stockFeignService;
+    private StockFeignService stockFeignService;
 
     @GetMapping("/stock")
     public Result demo(){

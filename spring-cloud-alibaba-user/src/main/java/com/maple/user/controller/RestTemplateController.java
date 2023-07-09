@@ -15,7 +15,7 @@ import org.springframework.web.client.RestTemplate;
 public class RestTemplateController {
 
     @Autowired
-    RestTemplate template;
+    private RestTemplate template;
 
     @GetMapping("/stock")
     public Result demo(){

@@ -6,7 +6,8 @@
   + [注册中心](../../tree/main/spring-cloud-alibaba-user#注册中心)
   + [配置中心](../../tree/main/spring-cloud-alibaba-user#配置中心)
   + [整合OpenFeign](../../tree/main/spring-cloud-alibaba-user#nacos注册中心结合openfeign)
-
++ [sentinel](../../tree/main/spring-cloud-alibaba-stock)
+  + 
 
   
 

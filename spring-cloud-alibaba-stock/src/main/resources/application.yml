@@ -14,7 +14,7 @@ spring:
     sentinel:
       transport:
         dashboard: 127.0.0.1:8858
-      web-context-unify: false # 默认true, 将调用链路收敛
+      web-context-unify: false # 默认true调用链路收敛, false将调用链路展开
 logging:
   level:
     com.maple.stock.feign: debug # 指定该路径下的日志界别为debug----本地开发时配置
