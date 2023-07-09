@@ -1,14 +1,11 @@
 package com.maple.cache.service;
 
-import com.maple.cache.entry.Employee;
+import com.maple.cache.pojo.Employee;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * @author 陈其丰

@@ -1,6 +1,5 @@
 package com.maple.cache.controller;
 
-import com.maple.cache.service.DemoService;
 import com.maple.cache.service.EmployeeService;
 import com.maple.common.domain.Result;
 import org.springframework.beans.factory.annotation.Autowired;

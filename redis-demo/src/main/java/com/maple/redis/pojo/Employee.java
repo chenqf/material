@@ -1,4 +1,4 @@
-package com.maple.cache.entry;
+package com.maple.redis.pojo;
 
 import java.io.Serializable;
 
