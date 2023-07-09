@@ -1,0 +1,10 @@
+server:
+  port: 8003
+spring:
+  application:
+    name: redis-demo
+  redis:
+    database: 0
+    host: ${CLOUD.IP}
+    port: 6379
+    password: chenqfredis

@@ -16,6 +16,8 @@
         <module>spring-cloud-alibaba-user</module>
         <module>spring-cloud-alibaba-stock</module>
         <module>common</module>
+        <module>redis-demo</module>
+        <module>cache-demo</module>
     </modules>
     <name>material</name>
     <description>material</description>
