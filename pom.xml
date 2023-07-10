@@ -18,6 +18,8 @@
         <module>common</module>
         <module>redis-demo</module>
         <module>cache-demo</module>
+        <module>rabbitMQ-demo</module>
+        <module>task-demo</module>
     </modules>
     <name>material</name>
     <description>material</description>

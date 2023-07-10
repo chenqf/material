@@ -8,7 +8,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 
 /**
- * @author 陈其丰
+ * @author chenqf
  */
 
 @Configuration

@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
- * @author 陈其丰
+ * @author chenqf
  */
 @Service
 public class TestServiceImp implements TestService {

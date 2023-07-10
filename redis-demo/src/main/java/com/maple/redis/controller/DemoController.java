@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * @author 陈其丰
+ * @author chenqf
  */
 @RestController
 @RequestMapping("/demo")
@@ -38,7 +38,7 @@ public class DemoController {
 
     @RequestMapping("/setObject")
     public Result setObject(){
-        Employee chenqf = new Employee(1, "chenqifeng1006");
+        Employee chenqf = new Employee(1, "chenqf1006");
         this.redisTemplate.opsForValue().set("employee",chenqf);
         System.out.println("set object: " + chenqf);
         return Result.success(chenqf);

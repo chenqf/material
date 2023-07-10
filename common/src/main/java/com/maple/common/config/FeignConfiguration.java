@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * @author 陈其丰
+ * @author chenqf
  */
 @Configuration
 public class FeignConfiguration {

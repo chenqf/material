@@ -9,7 +9,7 @@ import org.springframework.context.annotation.ComponentScan;
 
 
 /**
- * @author 陈其丰
+ * @author chenqf
  */
 @SpringBootApplication
 @EnableFeignClients

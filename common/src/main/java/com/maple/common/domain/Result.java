@@ -1,7 +1,7 @@
 package com.maple.common.domain;
 
 /**
- * @author 陈其丰
+ * @author chenqf
  */
 public class Result<T> {
     private Integer code;
@@ -55,6 +55,9 @@ public class Result<T> {
     }
     public static <T>Result success(T data){
         return new Result<T>(data);
+    }
+    public static <T>Result success(){
+        return new Result<T>();
     }
 
     @Override

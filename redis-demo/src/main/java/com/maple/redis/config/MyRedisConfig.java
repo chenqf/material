@@ -14,7 +14,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 import java.time.Duration;
 
 /**
- * @author 陈其丰
+ * @author chenqf
  */
 @Configuration
 public class MyRedisConfig {

@@ -1,0 +1,5 @@
+server:
+  port: 8006
+spring:
+  application:
+    name: task-demo

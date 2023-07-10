@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import java.util.Date;
 
 /**
- * @author 陈其丰
+ * @author chenqf
  */
 @Service
 public class DemoService {

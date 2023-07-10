@@ -1,0 +1,11 @@
+server:
+  port: 8005
+spring:
+  application:
+    name: rabbitMQ-demo
+  rabbitmq:
+    host: ${CLOUD.IP}
+    port: 5672
+    username: admin
+    password: chenqf
+    virtual-host: /

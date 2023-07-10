@@ -1,7 +1,7 @@
 package com.maple.stock.service;
 
 /**
- * @author 陈其丰
+ * @author chenqf
  */
 public interface TestService {
     Integer random();

@@ -7,7 +7,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 
 
 /**
- * @author 陈其丰
+ * @author chenqf
  */
 @SpringBootApplication
 @EnableFeignClients

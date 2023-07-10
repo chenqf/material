@@ -8,7 +8,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 /**
- * @author 陈其丰
+ * @author chenqf
  */
 @CacheConfig(cacheNames = "emp")
 @Service

@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * @author 陈其丰
+ * @author chenqf
  */
 public class CustomFeignRequestInterceptor implements RequestInterceptor {
     Logger logger = LoggerFactory.getLogger(this.getClass());

@@ -3,7 +3,7 @@ package com.maple.redis.pojo;
 import java.io.Serializable;
 
 /**
- * @author 陈其丰
+ * @author chenqf
  */
 
 public class Employee implements Serializable {

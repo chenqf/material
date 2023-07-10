@@ -5,7 +5,7 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 
 /**
- * @author 陈其丰
+ * @author chenqf
  */
 @FeignClient(name = "spring-cloud-alibaba-stock",path = "/stock")
 public interface StockFeignService {
