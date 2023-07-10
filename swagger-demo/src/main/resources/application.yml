@@ -1,0 +1,10 @@
+server:
+  port: 8007
+spring:
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  application:
+    name: swagger-demo
+swagger:
+  enable: true # 是否启用swagger, production使用false不启用

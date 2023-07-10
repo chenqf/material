@@ -20,6 +20,7 @@
         <module>cache-demo</module>
         <module>rabbitMQ-demo</module>
         <module>task-demo</module>
+        <module>swagger-demo</module>
     </modules>
     <name>material</name>
     <description>material</description>

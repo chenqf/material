@@ -55,7 +55,7 @@ public class TaskApplication {
 }
 ```
 
-#### 标识方法为定时任务 @Async
+#### 标识方法为定时任务 @Scheduled
 ```java
 @Service
 public class ScheduleService {

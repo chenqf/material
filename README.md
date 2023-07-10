@@ -10,6 +10,16 @@
 + [redis](../../tree/main/redis-demo)
 + [cache](../../tree/main/cache-demo)
 + [rabbitMQ](../../tree/main/rabbitMQ-demo)
++ [任务](../../tree/main/task-demo)
+  + [异步任务](../../tree/main/task-demo#异步任务)
+  + [单机定时任务](../../tree/main/task-demo#单机定时任务)
+  + 集群定时任务
+  + 动态时间定时任务
+  + [邮件任务](../../tree/main/task-demo#邮件任务)
++ 模版引擎
++ spring security
+  + 应用场景
++ [Swagger](../../tree/main/swagger-demo)
 
   
 
