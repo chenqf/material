@@ -38,7 +38,7 @@ public class DemoController {
 
     @RequestMapping("/setObject")
     public Result setObject(){
-        Employee chenqf = new Employee(1, "chenqf1006");
+        Employee chenqf = new Employee(1, "chenqifeng1006");
         this.redisTemplate.opsForValue().set("employee",chenqf);
         System.out.println("set object: " + chenqf);
         return Result.success(chenqf);

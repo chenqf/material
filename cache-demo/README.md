@@ -223,3 +223,31 @@ spring:
     port: 6379
     password: chenqfredis
 ```
+
+```java
+@Configuration
+public class MyRedisConfig {
+
+    private Duration timeToLive = Duration.ofHours(1);
+    @Bean
+    public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory){
+        RedisCacheConfiguration configuration = RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(timeToLive)
+                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(keySerializer()))
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(valueSerializer()))
+                .disableCachingNullValues();
+        
+        RedisCacheManager redisCacheManager = RedisCacheManager.builder(connectionFactory)
+                .cacheDefaults(configuration).transactionAware().build();
+        return redisCacheManager;
+    }
+
+    private RedisSerializer<String> keySerializer(){
+        return new StringRedisSerializer();
+    }
+
+    private RedisSerializer<Object> valueSerializer(){
+        return new GenericJackson2JsonRedisSerializer();
+    }
+}
+```
