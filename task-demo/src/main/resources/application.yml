@@ -3,3 +3,13 @@ server:
 spring:
   application:
     name: task-demo
+  mail:
+    password: ${ENV_MAIL_USERNAME}
+    username: ${ENV_MAIL_PASSWORD}
+    host: smtp.qq.com
+    port: 465
+    properties:
+      mail:
+        smtp:
+          ssl:
+            enable: true
