@@ -1,0 +1,14 @@
+server:
+  port: 8008
+spring:
+  application:
+    name: lock-demo
+  datasource:
+    url: jdbc:mysql://${ENV_CLOUD_IP}:3306/distributed_lock?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  redis:
+    host: ${CLOUD.IP}
+    port: 6379
+    password: chenqfredis

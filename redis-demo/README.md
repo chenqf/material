@@ -1,5 +1,8 @@
 # Redis
 
+> 单节点QPS可达10W+
+
+
 ## docker 安装
 
 ### 单机部署
@@ -110,6 +113,9 @@ public class MyRedisConfig {
     }
 }
 ```
+
+## 多数据源
+TODO 
 
 ## 分布式锁
 

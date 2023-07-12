@@ -221,7 +221,3 @@ public class AmqpAdminController {
     }
 }
 ```
-
-
-
-qq 授权码: vxrpkbivmlmnbccc
