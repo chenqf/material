@@ -37,3 +37,7 @@ docker exec -it redis-master redis-cli -p 6379 -a chenqfredis
 #!/bin/bash
 docker exec -it zookeeper ./bin/zkCli.sh -Djava.security.auth.login.config=/conf/zoo_jaas.conf
 
+## k8s
+
+helm charts
+helm museum
