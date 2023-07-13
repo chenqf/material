@@ -1,0 +1,31 @@
+package com.maple.lock.controller;
+
+import com.maple.common.domain.Result;
+import com.maple.lock.service.RedissonService;
+import com.maple.lock.service.StockService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * @author 陈其丰
+ */
+@RequestMapping("/redisson")
+@RestController
+public class RedissonController {
+    @Autowired
+    private RedissonService redissonService;
+
+    @GetMapping("/test/read/lock")
+    public Result testReadLock() throws InterruptedException {
+        this.redissonService.testReadLock();
+        return Result.success(null);
+    }
+
+    @GetMapping("/test/write/lock")
+    public Result testWriteLock() throws InterruptedException {
+        this.redissonService.testWriteLock();
+        return Result.success(null);
+    }
+}

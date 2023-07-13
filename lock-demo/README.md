@@ -430,12 +430,300 @@ public class StockService {
 + UUID结合线程ID确保只能对自己的锁解锁
 + 通过线程ID确保可重入
 
+TODO 主从下好像有问题
 ```java
+public class RedisDistributedLock implements Lock {
 
+    private StringRedisTemplate redisTemplate;
+    private String lockName;
+
+    private String uuid; // server process id
+
+    private long expire = 30; // seconds
+
+    public RedisDistributedLock(StringRedisTemplate redisTemplate, String lockName, String serverUuid) {
+        this.redisTemplate = redisTemplate;
+        this.lockName = lockName;
+        this.uuid = serverUuid + ":" + Thread.currentThread().getId();
+    }
+
+    private void renewExpire(){
+        String script = "if redis.call('hexists', KEYS[1], ARGV[1]) == 1 " +
+                "then " +
+                    "return redis.call('expire', KEYS[1], ARGV[2]) " +
+                "else " +
+                    "return 0 " +
+                "end";
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if (!redisTemplate.execute(new DefaultRedisScript<>(script,Boolean.class), Arrays.asList(lockName), uuid, String.valueOf(expire))) {
+                    renewExpire();
+                }
+            }
+        },expire / 3 * 1000);
+    }
+
+    @Override
+    public void lock() {
+        this.tryLock();
+    }
+
+    @Override
+    public void lockInterruptibly() throws InterruptedException {
+
+    }
+
+    @Override
+    public boolean tryLock() {
+        try {
+            return this.tryLock(-1L,TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    @Override
+    public boolean tryLock(long time, @NotNull TimeUnit unit) throws InterruptedException {
+        if(time != -1L){
+            this.expire = unit.toSeconds(time);
+        }
+        String script = "if redis.call('exists', KEYS[1]) == 0 or redis.call('hexists', KEYS[1], ARGV[1]) == 1 " +
+                "then " +
+                    "redis.call('hincrby', KEYS[1], ARGV[1], 1) " +
+                    "redis.call('expire', KEYS[1], ARGV[2]) " +
+                    "return 1 " +
+                "else " +
+                    "return 0 " +
+                "end";
+        while (!this.redisTemplate.execute(new DefaultRedisScript<>(script,Boolean.class), Arrays.asList(lockName), uuid, String.valueOf(expire))){
+            Thread.sleep(50);
+        }
+        // 加锁成功,开启定时器自动续期
+        this.renewExpire();
+        return true;
+    }
+
+    @Override
+    public void unlock() {
+        String script = "if redis.call('hexists', KEYS[1], ARGV[1]) == 0 " +
+                "then " +
+                    "return nil " +
+                "elseif redis.call('hincrby', KEYS[1], ARGV[1], -1) == 0 " +
+                "then " +
+                    "return redis.call('del',KEYS[1]) " +
+                "else " +
+                    "return 0 " +
+                "end";
+
+        Long flag = this.redisTemplate.execute(new DefaultRedisScript<>(script, Long.class), Arrays.asList(lockName), uuid);
+        if(flag == null){
+            throw new IllegalMonitorStateException("You don't have this lock!");
+        }
+    }
+
+    @NotNull
+    @Override
+    public Condition newCondition() {
+        return null;
+    }
+}
+```
+```java
+@Component
+public class DistributedLockClient {
+   @Autowired
+   private StringRedisTemplate redisTemplate;
+
+   private String uuid;
+
+   public DistributedLockClient() {
+      this.uuid = UUID.randomUUID().toString();
+   }
+
+   public RedisDistributedLock getRedisLock(String lockName){
+      return new RedisDistributedLock(redisTemplate, lockName, uuid);
+   }
+}
+```
+```java
+@Service
+public class StockService {
+    
+    @Autowired
+    private StringRedisTemplate redisTemplate;
+
+    @Autowired
+    private DistributedLockClient distributedLockClient;
+    
+    public void redisDeduct(){
+        String stock = this.redisTemplate.opsForValue().get("stock");
+        if (stock != null && stock.length() != 0) {
+            int count = Integer.parseInt(stock);
+            if(count > 0){
+                this.redisTemplate.opsForValue().set("stock", String.valueOf(--count));
+            }
+        }
+    }
+    
+    public void finalRedisDistributedLockDeduct() {
+        RedisDistributedLock redisLock = this.distributedLockClient.getRedisLock("lock-demo");
+        redisLock.lock();
+        try {
+            this.redisDeduct();
+        } finally {
+            redisLock.unlock();
+        }
+    }
+}
 ```
 
-#### RedLock
+##### 遗留问题
 
-一般production环境, Redis会部署 主从集群, 并配合哨兵模式.
+> 一般production环境, Redis会部署 主从,哨兵,集群.
 
-lock ---> master ---> set ---> IO(write log) 
+1. A用户-加锁时更新master-redis
+2. master-redis准备将数据同步至slave-redis
+3. master-redis在同步前宕机
+4. slave-redis升任为master(此时并有之前的加锁数据)
+5. A用户-业务执行中,并未释放锁 / B用户-请求加锁, 加锁成功
+6. 同时有2个用户获取到锁
+
+#### RedLock解决集群问题
+
+部署多台Redis节点, 彼此隔离相互无主从关系
+
+1. client获取系统时间
+2. client使用相同的KV值依次从多个Redis中获取锁,且指定超时时间
+   + 若某个节点超过一定时间依然加锁失败,直接放弃
+   + 避免被宕机节点阻塞
+   + 尽快尝试到下一节点加锁
+3. 计算获取锁的消耗时间 = 加锁前的系统时间 - step1中的时间
+   1. 获取锁的消耗时间小于总锁定时间
+   2. 半数以上节点加锁成功
+   + 满足以上条件, 认为加锁成功
+4. 计算剩余锁定时间 = 总的锁定时间 - step3中的消耗时间
+5. 若step3失败, 即获取锁失败, 针对所有节点释放锁
+
+> 性能较差, 基础设施费用高, 实现复杂, 很少用
+
+### Redisson
+
+[Redisson文档](https://github.com/redisson/redisson/wiki)
+
+```xml
+<dependency>
+   <groupId>org.redisson</groupId>
+   <artifactId>redisson</artifactId>
+   <version>3.20.0</version>
+</dependency>
+```
+
+```java
+@Configuration
+public class RedissonConfig {
+    @Value("${spring.redis.host}")
+    private String host;
+
+    @Value("${spring.redis.port}")
+    private String port;
+
+    @Value("${spring.redis.password}")
+    private String password;
+
+    @Bean
+    public RedissonClient redissonClient(){
+       Config config = new Config();
+       config.useSingleServer().setAddress("redis://" + host +":" + port)
+               .setPassword(password)
+               .setDatabase(1)
+               .setConnectionMinimumIdleSize(50) // 连接池最小空闲数
+               .setConnectionPoolSize(100) // 连接池最大线程数
+               .setIdleConnectionTimeout(50000) // 线程超时时间
+               .setConnectTimeout(20000) // 客户端获取redis连接的超时时间
+               .setTimeout(10000); // 响应超时时间
+       return Redisson.create(config);
+    }
+}
+```
+
+#### 公平锁 & 非公平锁
+
++ 非公平锁: 先请求一次锁,拿到就拿到, 拿不到就排队等待(可能永远也拿不到了)
++ 公平锁: 先到的排在前面-依次等待
+
+```java
+@Service
+public class RedissonService {
+    @Autowired
+    private RedissonClient redissonClient;
+
+    public void redissonDeduct(){
+        RLock lock = this.redissonClient.getLock("lock-key"); // 非公平锁
+//        RLock lock = this.redissonClient.getFairLock("lock-key"); // 公平锁    
+        lock.lock();
+        try{
+            this.deduct();
+        }finally {
+            lock.unlock();
+        }
+    }
+}
+```
+
+#### 读写锁
+
++ 写和写不可并发
++ 读和写不可并发
++ 读和读可以并发
+
+```java
+@Service
+public class RedissonService {
+    @Autowired
+    private RedissonClient redissonClient;
+
+   public void testWriteLock(){
+      RReadWriteLock lock = this.redissonClient.getReadWriteLock("rwLock");
+      lock.writeLock().lock();
+        //......read
+      lock.writeLock().unlock();
+   }
+
+   public void testReadLock(){
+      RReadWriteLock lock = this.redissonClient.getReadWriteLock("rwLock");
+      lock.readLock().lock();
+      //......write
+      lock.readLock().unlock();
+   }
+}
+```
+
+#### 信号量
+
+```java
+@Service
+public class RedissonService {
+    @Autowired
+    private RedissonClient redissonClient;
+
+   public void testSemaphore(){
+      RSemaphore semaphore = this.redissonClient.getSemaphore("semaphore");
+      semaphore.trySetPermits(3); // 设置资源量 限流的线程数
+      try {
+         semaphore.acquire(); // 获取资源, 获取成功的线程继续执行,否则被阻塞
+         System.out.println("执行业务.....");
+         TimeUnit.SECONDS.sleep(10 + new Random().nextInt(10));
+         System.out.println("业务执行完....");
+         semaphore.release();
+      } catch (InterruptedException e) {
+         e.printStackTrace();
+      }
+   }
+}
+```
+
+#### 闭锁 CountDownLatch
+

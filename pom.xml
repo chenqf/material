@@ -21,6 +21,8 @@
         <module>rabbitMQ-demo</module>
         <module>task-demo</module>
         <module>swagger-demo</module>
+        <module>lock-demo</module>
+        <module>stream-demo</module>
     </modules>
     <name>material</name>
     <description>material</description>

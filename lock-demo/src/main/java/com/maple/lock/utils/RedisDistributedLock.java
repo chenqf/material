@@ -22,9 +22,9 @@ public class RedisDistributedLock implements Lock {
     private StringRedisTemplate redisTemplate;
     private String lockName;
 
-    private String uuid;
+    private String uuid; // server process id
 
-    private long expire = 30;
+    private long expire = 30; // seconds
 
     public RedisDistributedLock(StringRedisTemplate redisTemplate, String lockName, String serverUuid) {
         this.redisTemplate = redisTemplate;

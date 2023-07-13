@@ -169,15 +169,4 @@ public class StockService {
             redisLock.unlock();
         }
     }
-
-    public static void main(String[] args) {
-        System.out.println(Thread.currentThread().getId());
-        new Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-                System.out.println("timer:" + Thread.currentThread().getId());
-                Thread.currentThread().getParent()
-            }
-        },2000,4000);
-    }
 }
