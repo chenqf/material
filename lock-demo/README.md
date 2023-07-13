@@ -673,7 +673,7 @@ public class RedissonService {
 }
 ```
 
-#### 读写锁
+#### 分布式-读写锁
 
 + 写和写不可并发
 + 读和写不可并发
@@ -701,7 +701,7 @@ public class RedissonService {
 }
 ```
 
-#### 信号量
+#### 分布式-信号量
 
 ```java
 @Service
@@ -725,5 +725,33 @@ public class RedissonService {
 }
 ```
 
-#### 闭锁 CountDownLatch
+#### 分布式-闭锁 CountDownLatch
+
+```java
+@Service
+public class RedissonService {
+    @Autowired
+    private RedissonClient redissonClient;
+
+   public void testLatch(){
+      RCountDownLatch countDownLatch = this.redissonClient.getCountDownLatch("testCountDownLatch");
+      System.out.println("我要锁门了, 还剩5个人, 你们快走...");
+      countDownLatch.trySetCount(5);
+      try {
+         countDownLatch.await();
+         System.out.println("锁上门了....");
+      } catch (InterruptedException e) {
+         e.printStackTrace();
+      }
+   }
+   public void testCountDown(){
+      RCountDownLatch countDownLatch = this.redissonClient.getCountDownLatch("testCountDownLatch");
+      System.out.println("我要出门了....");
+      countDownLatch.countDown();
+   }
+}
+```
+
+
+## Zookeeper分布式锁
 

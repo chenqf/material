@@ -28,4 +28,15 @@ public class RedissonController {
         this.redissonService.testWriteLock();
         return Result.success(null);
     }
+    @GetMapping("/testLatch")
+    public Result testLatch() throws InterruptedException {
+        this.redissonService.testLatch();
+        return Result.success("锁上门了");
+    }
+
+    @GetMapping("/testCountDown")
+    public Result testCountDown() throws InterruptedException {
+        this.redissonService.testCountDown();
+        return Result.success("出门了");
+    }
 }

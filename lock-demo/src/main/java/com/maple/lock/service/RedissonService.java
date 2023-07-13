@@ -8,10 +8,7 @@ import com.maple.lock.utils.DistributedLockClient;
 import com.maple.lock.utils.RedisDistributedLock;
 import org.apache.commons.lang3.StringUtils;
 import org.redisson.Redisson;
-import org.redisson.api.RLock;
-import org.redisson.api.RReadWriteLock;
-import org.redisson.api.RSemaphore;
-import org.redisson.api.RedissonClient;
+import org.redisson.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisOperations;
@@ -93,8 +90,21 @@ public class RedissonService {
         }
     }
 
-    public void testCountDownLatch(){
-
+    public void testLatch(){
+        RCountDownLatch countDownLatch = this.redissonClient.getCountDownLatch("testCountDownLatch");
+        System.out.println("我要锁门了, 还剩5个人, 你们快走...");
+        countDownLatch.trySetCount(5);
+        try {
+            countDownLatch.await();
+            System.out.println("锁上门了....");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+    public void testCountDown(){
+        RCountDownLatch countDownLatch = this.redissonClient.getCountDownLatch("testCountDownLatch");
+        System.out.println("我要出门了....");
+        countDownLatch.countDown();
     }
 
     public static void main(String[] args) throws InterruptedException {
@@ -112,7 +122,7 @@ public class RedissonService {
                 }
             }).start();
         }
-        countDownLatch.wait();
+        countDownLatch.await();
         System.out.println(Thread.currentThread().getName() + " 班长锁门");
     }
 }

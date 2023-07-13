@@ -1,34 +1,6 @@
-# Deploy
+# Redis
 
-## Mysql
-
-### 单机安装
-```shell
-export MYSQL_ROOT_PASSWORD=123456
-export PORT=3306
-export DOCKER_NAME=mysql
-mkdir -p /docker/mysql
-docker pull mysql:8.0
-docker run --name ${DOCKER_NAME} \
--v /docker/mysql/conf:/etc/mysql/conf.d \
--v /docker/mysql/logs:/logs \
--v /docker/mysql/data:/var/lib/mysql \
--e MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD} \
--d -i -p ${PORT}:3306 mysql:8.0
-# 进入容器
-# docker exec -it ${DOCKER_NAME} /bin/bash
-# 开启远程访问
-docker exec ${DOCKER_NAME} mysql -uroot -p${MYSQL_ROOT_PASSWORD} \
--e "use mysql; select host,user from user; ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY '${MYSQL_ROOT_PASSWORD}'; flush privileges;"
-```
-
-### 读写分离
-
-TODO 悲观锁是否有问题
-
-## Redis
-
-### 单机安装
+## 单机
 ```shell
 export REDIS_VERSION=7.0.0
 export DOCKER_REDIS_NAME=redis
@@ -59,7 +31,7 @@ docker ps -a | grep ${DOCKER_REDIS_NAME}
 # docker exec -it <container-name> redis-cli -p 6379 -a ${REDIS_PASSWORD}
 ```
 
-### 主从哨兵模式
+## 主从哨兵
 
 ```shell
 ```shell
@@ -67,6 +39,7 @@ docker ps -a | grep ${DOCKER_REDIS_NAME}
 export SLAVE_NUM=3
 # 几台哨兵节点
 export SENTINEL_NUM=3
+# 密码
 export REDIS_PASSWORD=chenqfredis
 export REDIS_BASE_DIR=/docker/redis/sentinel/
 export REDIS_NET_NAME=redis-net
