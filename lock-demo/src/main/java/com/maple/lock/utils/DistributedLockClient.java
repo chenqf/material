@@ -14,6 +14,9 @@ public class DistributedLockClient {
     @Autowired
     private StringRedisTemplate redisTemplate;
 
+    @Autowired
+    private ZookeeperClient zookeeperClient;
+
     private String uuid;
 
     public DistributedLockClient() {
@@ -22,5 +25,9 @@ public class DistributedLockClient {
 
     public RedisDistributedLock getRedisLock(String lockName){
         return new RedisDistributedLock(redisTemplate, lockName, uuid);
+    }
+
+    public ZookeeperDistributedLock getZookeeperLock(String lockName){
+        return new ZookeeperDistributedLock(zookeeperClient.getZookeeper(),lockName);
     }
 }

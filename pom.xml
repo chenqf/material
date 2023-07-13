@@ -36,6 +36,8 @@
         <lombok.version>1.18.26</lombok.version>
         <mysql.version>8.0.28</mysql.version>
         <mybatis-plus.version>3.5.2</mybatis-plus.version>
+        <redisson.version>3.20.0</redisson.version>
+        <zookeeper.version>3.7.1</zookeeper.version>
     </properties>
 
     <!--  依赖放入其中, 子项目中需要显示声明才能继承  -->
@@ -77,6 +79,16 @@
                 <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-boot-starter</artifactId>
                 <version>${mybatis-plus.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.redisson</groupId>
+                <artifactId>redisson</artifactId>
+                <version>${redisson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.zookeeper</groupId>
+                <artifactId>zookeeper</artifactId>
+                <version>${zookeeper.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

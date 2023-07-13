@@ -755,3 +755,132 @@ public class RedissonService {
 
 ## Zookeeper分布式锁
 
+### ZK节点类型
+
++ 永久节点
+  + create <dir> <content>
++ 临时节点 - 客户端断开连接后消失
+  + create -e <dir> <content>
++ 永久序列化节点 - 可创建同名节点,实际存储添加编号实现
+  + create -s <dir> <content>
++ 临时序列化节点 - 可创建同名节点,实际存储添加编号实现 - 客户端断开连接后消失
+  + create -s -e <dir> <content>
+
++ 获取节点内容
+  + get <dir>
+
+### ZK节点的时间监听
+
+> 所有监听都是一次性的, all client 只要监听都会收到 message
+
++ 节点创建 : NodeCreated
+  + stat -w <dir>
++ 节点删除 : NodeDeleted
+  + stat -w <dir>
++ 节点数据变化 : NodeDataChanged
+  + get -w <dir>
++ 子节点变化 : NodeChildrenChanged
+  + ls -w <dir>
+
+### 分布式锁
+
++ 排他性 - 利用ZK节点不能重复
++ 阻塞锁 - 临时序列化节点 + 监听前一节点变化 + 闭锁
+  + 公平锁
++ 可重入 - ThreadLocal实现
+
+```xml
+<dependency>
+    <groupId>org.apache.zookeeper</groupId>
+    <artifactId>zookeeper</artifactId>
+</dependency>
+```
+```java
+@Slf4j
+@Component
+public class ZookeeperClient {
+
+    @Value("${ENV_CLOUD_IP}")
+    private String host;
+
+    private ZooKeeper zookeeper = null;
+
+    public ZooKeeper getZookeeper() {
+        return zookeeper;
+    }
+
+    @PostConstruct
+    public void init() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        try {
+            zookeeper = new ZooKeeper(host + ":2181", 30000,event -> {
+                Watcher.Event.KeeperState state = event.getState();
+                if (state.equals(Watcher.Event.KeeperState.SyncConnected)) {
+                    log.info("获取到zk连接....");
+                    latch.countDown();
+                } else if (state.equals(Watcher.Event.KeeperState.Closed)) {
+                    log.info("关闭了zk连接....");
+                }
+            });
+            latch.await();
+        } catch (InterruptedException | IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @PreDestroy
+    public void destroy(){
+        try {
+            this.zookeeper.close();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+```java
+@Component
+public class DistributedLockClient {
+    
+    @Autowired
+    private ZookeeperClient zookeeperClient;
+
+    public ZookeeperDistributedLock getZookeeperLock(String lockName){
+        return new ZookeeperDistributedLock(zookeeperClient.getZookeeper(),lockName);
+    }
+}
+```
+```java
+@Service
+public class ZookeeperService {
+
+    @Autowired
+    private DistributedLockClient distributedLockClient;
+
+    @Autowired
+    private StockService stockService;
+
+    public void deduct(){
+        ZookeeperDistributedLock lock = distributedLockClient.getZookeeperLock("lock");
+        lock.lock();
+        this.stockService.redisDeduct();
+        lock.unlock();
+    }
+
+}
+```
+
+
+> Redis分布式锁有的功能 Zookeeper分布式锁都有
+> 
+> Redis 实现阻塞锁很麻烦
+> 
+> ZK集群趋向于一致性集群, Redis集群的问题, ZK几乎不会出现
+
+### curator
+
+
+
+
+
+
