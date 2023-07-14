@@ -1,4 +1,4 @@
-package com.maple.lock.config;
+package com.maple.lock4r.config;
 
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;

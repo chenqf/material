@@ -1,0 +1,9 @@
+server:
+  port: 8009
+spring:
+  application:
+    name: lock-redis
+  redis:
+    host: ${ENV_CLOUD_IP}
+    port: 6379
+    password: chenqfredis

@@ -1,6 +1,7 @@
 package com.maple.lock.controller;
 
 import com.maple.common.domain.Result;
+import com.maple.lock.pojo.Stock;
 import com.maple.lock.service.RedissonService;
 import com.maple.lock.service.StockService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,5 +39,12 @@ public class RedissonController {
     public Result testCountDown() throws InterruptedException {
         this.redissonService.testCountDown();
         return Result.success("出门了");
+    }
+
+    @GetMapping("/testAnnotation")
+    public Result testAnnotation() {
+        Stock stock = new Stock(10L,"10001","大连",100,1);
+        this.redissonService.testAnnotation(stock);
+        return Result.success();
     }
 }

@@ -41,3 +41,10 @@ docker exec -it zookeeper ./bin/zkCli.sh -Djava.security.auth.login.config=/conf
 
 helm charts
 helm museum
+
+@MethodExporter
+@Retry
+防重复提交
+幂等性前置校验
+
+spring-retry

@@ -5,6 +5,7 @@
 export REDIS_VERSION=7.0.0
 export DOCKER_REDIS_NAME=redis
 export REDIS_PORT=6379
+# 密码
 export REDIS_PASSWORD=chenqfredis
 export REDIS_DATA_DIR=/docker/redis/standalone/data
 export REDIS_CONF_DIR=/docker/redis/standalone/conf

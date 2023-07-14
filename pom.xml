@@ -23,6 +23,7 @@
         <module>swagger-demo</module>
         <module>lock-demo</module>
         <module>stream-demo</module>
+        <module>lock-redis</module>
     </modules>
     <name>material</name>
     <description>material</description>

@@ -1,32 +1,15 @@
 package com.maple.lock.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
-import com.maple.lock.mapper.StockMapper;
+import com.maple.lock.aop.AutoLock4r;
 import com.maple.lock.pojo.Stock;
-import com.maple.lock.utils.DistributedLockClient;
-import com.maple.lock.utils.RedisDistributedLock;
-import org.apache.commons.lang3.StringUtils;
-import org.redisson.Redisson;
 import org.redisson.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataAccessException;
-import org.springframework.data.redis.core.RedisOperations;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.Time;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author 陈其丰
@@ -105,6 +88,11 @@ public class RedissonService {
         RCountDownLatch countDownLatch = this.redissonClient.getCountDownLatch("testCountDownLatch");
         System.out.println("我要出门了....");
         countDownLatch.countDown();
+    }
+
+    @AutoLock4r
+    public void testAnnotation(Stock stock){
+        System.out.println("service method value: " + stock);
     }
 
     public static void main(String[] args) throws InterruptedException {

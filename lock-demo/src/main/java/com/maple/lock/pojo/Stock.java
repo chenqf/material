@@ -1,6 +1,7 @@
 package com.maple.lock.pojo;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 /**
@@ -8,6 +9,7 @@ import lombok.Data;
  */
 @Data
 @TableName("stock")
+@AllArgsConstructor
 public class Stock {
     private Long id;
     private String productCode;

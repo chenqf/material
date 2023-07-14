@@ -25,8 +25,21 @@
 + CAP设计方案
 + 分布式ID
 + 并发编程, https://www.bilibili.com/video/BV1EZ4y147qZ/?spm_id_from=333.337.search-card.all.click
++ 滑动窗口 jdhotkey
 
-  
+
+
+
+文件上传大小配置
+
+在内部@Bean没有依赖的情况下, 建议配置, 性能更好,启动更快
+@Configuration(proxyBeanMethods = false) // 就相当于以前的bean.xml
+@EnableAutoConfiguration
+  @AutoConfigurationPackage
+@import
+
+
+批处理
 
 
 
