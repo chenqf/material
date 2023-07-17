@@ -29,7 +29,10 @@
 # 1883 MQTT协议
 # RABBITMQ_DEFAULT_USER 用户名
 # RABBITMQ_DEFAULT_PASS 密码
-docker run -d --name rabbitmq -e RABBITMQ_DEFAULT_USER=admin -e RABBITMQ_DEFAULT_PASS=chenqf -p 15672:15672 -p 5672:5672 -p 25672:25672 -p 61613:61613 -p 1883:1883 rabbitmq:3.12.1-management
+export USERNAME=admin
+export PASSWORD=chenqf
+export VERSION=3.12.1
+docker run -d --name rabbitmq -e RABBITMQ_DEFAULT_USER=${USERNAME} -e RABBITMQ_DEFAULT_PASS=${PASSWORD} -p 15672:15672 -p 5672:5672 -p 25672:25672 -p 61613:61613 -p 1883:1883 rabbitmq:${VERSION}-management
 # 访问web界面: http://127.0.0.1:15672/
 ```
 

@@ -1,6 +1,7 @@
 package com.maple.lock4r.controller;
 
 import com.maple.lock4r.Service.DemoService;
+import com.maple.lock4r.entity.Book;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,7 +25,7 @@ public class DemoController {
 
     @GetMapping("test2")
     public String demo2() throws InterruptedException {
-        this.demoService.test2();
+        this.demoService.test2(new Book(1,"chenqf"));
         return "----";
     }
 }

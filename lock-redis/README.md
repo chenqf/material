@@ -218,7 +218,7 @@ public class AutoLock4rAspect {
     @Autowired
     private RedissonClient redissonClient;
 
-    @Pointcut("@annotation(com.maple.lock4r.annotation.AutoLock4r)")
+    @Pointcut("@annotation(com.maple.lock4r.annotation.Lock4r)")
     public void lockPointcut() {}
 
 

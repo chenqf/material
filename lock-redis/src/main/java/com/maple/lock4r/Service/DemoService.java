@@ -1,14 +1,12 @@
 package com.maple.lock4r.Service;
 
-import com.maple.lock4r.annotation.AutoLock4r;
+import com.maple.lock4r.annotation.Lock4r;
+import com.maple.lock4r.entity.Book;
 import com.maple.lock4r.utils.LockClient;
 import com.maple.lock4r.utils.LockManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author 陈其丰
@@ -40,8 +38,8 @@ public class DemoService {
         }
     }
 
-    @AutoLock4r
-    public void test2() {
+    @Lock4r("test_book.name")
+    public void test2(Book book) {
         String key = "demo2";
         String s = this.redisTemplate.opsForValue().get(key);
         if(s == null || s.length() == 0){
