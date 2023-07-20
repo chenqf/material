@@ -18,7 +18,7 @@ public class MqSentController {
 
     @RequestMapping("/demo")
     public String direct1(){
-        rabbitTemplate.convertAndSend("demo","demoKey",new Book(1,"chenqf","haha"));
+        rabbitTemplate.convertAndSend("exchange-demo","demo",new Book(1,"chenqf","haha"));
         return "";
     }
 }
