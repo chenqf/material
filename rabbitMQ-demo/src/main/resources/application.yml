@@ -5,7 +5,7 @@ spring:
     name: rabbitMQ-demo
   rabbitmq:
     host: ${CLOUD.IP}
-    port: 5672
+    port: 5682
     username: admin
     password: chenqf
     virtual-host: /

@@ -30,7 +30,7 @@
 
 
 
-文件上传大小配置
+
 
 在内部@Bean没有依赖的情况下, 建议配置, 性能更好,启动更快
 @Configuration(proxyBeanMethods = false) // 就相当于以前的bean.xml
