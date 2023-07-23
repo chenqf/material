@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import java.util.HashMap;
 
 /**
- * @author chenqf
+ * 用于自动创建 exchange queue binding
  */
 @Configuration
 public class AmqpConfig {
@@ -28,8 +28,24 @@ public class AmqpConfig {
      * 声明 classic 队列
      */
     @Bean
+    public Queue singleActiveQueue() {
+        HashMap<String, Object> map = new HashMap<>();
+        map.put("x-single-active-consumer",true); // 单活模式
+        map.put("x-queue-type","quorum"); // 指定为 quorum 类型的队列
+        Queue queue = new Queue("single-active-demo",true,false,false,map);
+        amqpAdmin.declareQueue(queue);
+        return queue;
+    }
+
+    /**
+     * 声明 classic 队列
+     */
+    @Bean
     public Queue classicQueue() {
-        Queue queue = new Queue("classic-demo",true,false,false);
+        HashMap<String, Object> map = new HashMap<>();
+        map.put("x-dead-letter-exchange","dead-letter-exchange"); // 指定死信队列的exchange
+        map.put("x-dead-letter-routing-key","dead-routing-key"); // 指定死信队列的exchange
+        Queue queue = new Queue("classic-demo",true,false,false,map);
         amqpAdmin.declareQueue(queue);
         return queue;
     }
@@ -55,7 +71,7 @@ public class AmqpConfig {
     public Queue quorumQueue() {
         HashMap<String, Object> map = new HashMap<>();
         map.put("x-queue-type","quorum"); // 指定为 quorum 类型的队列
-        map.put("x-delivery-limit",3); // 指定消息重试次数,总次数为n+1, 超过次数进入死信队列
+        map.put("x-delivery-limit",10); // 指定消息重试次数,总次数为n+1, 超过次数进入死信队列
         map.put("x-dead-letter-exchange","dead-letter-exchange"); // 指定死信队列的exchange
         map.put("x-dead-letter-routing-key","dead-routing-key"); // 指定死信队列的exchange
         Queue queue = new Queue("quorum-demo",true,false,false,map);
@@ -78,6 +94,12 @@ public class AmqpConfig {
     @Bean
     public DirectExchange demoExchange() {
         DirectExchange exchange = new DirectExchange("exchange-demo",true,false);
+        amqpAdmin.declareExchange(exchange);
+        return exchange;
+    }
+    @Bean
+    public DirectExchange demoExchange1() {
+        DirectExchange exchange = new DirectExchange("classic-exchange-demo",true,false);
         amqpAdmin.declareExchange(exchange);
         return exchange;
     }
@@ -107,10 +129,18 @@ public class AmqpConfig {
     public Binding binding3() {
         return BindingBuilder.bind(delayQueue()).to(demoExchange()).with("demo");
     }
+    @Bean
+    public Binding binding6() {
+        return BindingBuilder.bind(singleActiveQueue()).to(demoExchange()).with("demo");
+    }
 
     @Bean
     public Binding binding4() {
         return BindingBuilder.bind(deadLetterQuorumQueue()).to(deadLetterExchange()).with("dead-routing-key");
+    }
+    @Bean
+    public Binding binding5() {
+        return BindingBuilder.bind(classicQueue()).to(demoExchange1()).with("demo");
     }
 
 }

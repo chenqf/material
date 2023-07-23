@@ -11,6 +11,14 @@ spring:
     virtual-host: /
     listener:
       simple:
-        acknowledge-mode: manual
-      direct:
-        acknowledge-mode: manual
+        acknowledge-mode: auto
+        retry:
+          enabled: true          # 是否开启重试
+          max-attempts: 5        # 最大重试次数
+          max-interval: 50000    # 重试最大间隔时间
+          initial-interval: 1000 # 重试间隔（单位：毫秒）
+          multiplier: 2          # 间隔时间乘子，间隔时间*乘子=下一次的间隔时间，最大不能超过设置的最大间隔时间
+        prefetch: 5 #指定一个请求能处理多少消息
+        concurrency: 5 # 消费者数量
+    publisher-confirm-type: correlated # 确认消息已发送到Exchange
+    publisher-returns: true # 确认消息已发送到Queue

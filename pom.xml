@@ -25,7 +25,6 @@
         <module>stream-demo</module>
         <module>lock-redis</module>
         <module>juc-demo</module>
-        <module>task-demo</module>
     </modules>
     <name>material</name>
     <description>material</description>
@@ -101,6 +100,11 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
         <dependency>
