@@ -31,6 +31,11 @@ public class BookService {
         }
     }
 
+    @RabbitListener(queues = "queue-demo1")
+    public void receive(Book book, Channel channel) throws Exception {
+        Thread.sleep(150);
+    }
+
     @RabbitListener(queues = "single-active-demo")
     public void receiveSingle(Book book, Channel channel) throws Exception {
         System.out.println(book);

@@ -21,14 +21,24 @@ public class Demo {
         factory.setVirtualHost("/");
         Connection connection = factory.newConnection();
         Channel channel = connection.createChannel();
-        Consumer consumer = new DefaultConsumer(channel) {
-            @Override
-            public void handleDelivery(String consumerTag, Envelope envelope,
-                                       AMQP.BasicProperties properties, byte[] body) throws IOException {
-                String message = new String(body, "UTF-8");
-                System.out.println("Received message: " + message);
-            }
-        };
-        channel.basicConsume("classic-demo", true, consumer); // 自动模式
+
+
+        for(int i = 0 ; i < 10000 ; i ++){
+            String message = "Sharding message "+i;
+            channel.basicPublish("sharding-exchange", String.valueOf(i), null,
+                    message.getBytes());
+        }
+
+
+
+//        Consumer consumer = new DefaultConsumer(channel) {
+//            @Override
+//            public void handleDelivery(String consumerTag, Envelope envelope,
+//                                       AMQP.BasicProperties properties, byte[] body) throws IOException {
+//                String message = new String(body, "UTF-8");
+//                System.out.println("Received message: " + message);
+//            }
+//        };
+//        channel.basicConsume("classic-demo", true, consumer); // 自动模式
     }
 }

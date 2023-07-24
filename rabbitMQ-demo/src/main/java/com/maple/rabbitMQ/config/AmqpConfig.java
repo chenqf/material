@@ -28,6 +28,13 @@ public class AmqpConfig {
      * 声明 classic 队列
      */
     @Bean
+    public Queue queue_demo() {
+        Queue queue = new Queue("queue-demo1",true,false,false);
+        amqpAdmin.declareQueue(queue);
+        return queue;
+    }
+
+    @Bean
     public Queue singleActiveQueue() {
         HashMap<String, Object> map = new HashMap<>();
         map.put("x-single-active-consumer",true); // 单活模式
@@ -92,6 +99,13 @@ public class AmqpConfig {
     }
 
     @Bean
+    public DirectExchange demo_exchange() {
+        DirectExchange exchange = new DirectExchange("exchange-demo1",true,false);
+        amqpAdmin.declareExchange(exchange);
+        return exchange;
+    }
+
+    @Bean
     public DirectExchange demoExchange() {
         DirectExchange exchange = new DirectExchange("exchange-demo",true,false);
         amqpAdmin.declareExchange(exchange);
@@ -113,6 +127,13 @@ public class AmqpConfig {
         amqpAdmin.declareExchange(exchange);
         return exchange;
     }
+
+//    @Bean
+//    public DirectExchange shardingExchange() {
+//        Exchange exchange = new Exchange();
+//        amqpAdmin.declareExchange(exchange);
+//        return exchange;
+//    }
 
 
     @Bean
@@ -141,6 +162,11 @@ public class AmqpConfig {
     @Bean
     public Binding binding5() {
         return BindingBuilder.bind(classicQueue()).to(demoExchange1()).with("demo");
+    }
+
+    @Bean
+    public Binding binding7() {
+        return BindingBuilder.bind(queue_demo()).to(demo_exchange()).with("demo");
     }
 
 }

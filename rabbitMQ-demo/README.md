@@ -464,35 +464,52 @@ public class BookService {
 }
 ```
 
-### 避免重复消费
+### 幂等消费 - 避免重复消费
 
-消费消息时,业务逻辑已完成, 在应答前宕机, 会导致消息未被删除, 会出现重复消费现象
+1. 发送消息时, 已经落盘, 但由于网络原因, 未给出应答, 导致重复发送
+2. 消费消息时,业务逻辑已完成, 在应答前宕机, 会导致消息未被删除, 会出现重复消费现象
 
-TODO 
+消费消息时, 利用业务id或唯一id,存储至redis, 消费前进行查询, 若存在代表已经消费过
 
-
-### 幂等消费
-
-
-
-+ 幂等消费
-+ 事务 https://www.bilibili.com/video/BV14N411c74U/?spm_id_from=trigger_reload&vd_source=0494972cf815a7a4a8ac831a4c0a1229
-
-+ 联邦插件
-+ 分片插件
-
-+ 按消息键保序
-+ 
-并发消费 https://www.bilibili.com/video/BV1vY411671c/?spm_id_from=333.337.search-card.all.click&vd_source=0494972cf815a7a4a8ac831a4c0a1229
-
-+ 批量发送 https://www.bilibili.com/video/BV16T411a7q4/?spm_id_from=autoNext&vd_source=0494972cf815a7a4a8ac831a4c0a1229
+消费前,使用分布式锁, 避免并发时时出现重复消费
 
 
-## Rabbit Plugin
+### 分布式事务
 
-## Production 最佳实践
+> 最终一致性, 可接受暂时不一致
+
+1. Producer投递消息成功, Consumer消费失败, Producer不需要回滚
+2. Consumer消费失败, Consumer手动ACK进行补偿重试, 注意`幂等性`问题
+3. Producer投递成功, Consumer消费成功, 但Producer的DB事务回滚了, 需要执行`补单操作`
+
+`补单机制` : 投递消息时分发为两个队列, 一个作为真是Consumer的消费队列, 另一个作为校验是否Producer事务执行成功, 做失败进行补单
+
+### 联邦插件
+
+在非集群下将消息备份至其他RabbitMQ, 对于`异地多活`的部署比较有用
+
+```shell
+# 所有rabbitmq中开启联邦插件
+rabbitmq-plugins enable rabbitmq_federation
+rabbitmq-plugins enable rabbitmq_federation_management
+```
+
+![image-20230724114621928](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230724114621928.png)
+
+Downstream中配置要拉取的Upstream信息:
+
+![image-20230724145527372](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230724145527372.png)
+
+Downstream中配置接收Upstream消息的Policy:
+
+![image-20230724145911451](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230724145911451.png)
+
+检查配置是否成功:
+
+![image-20230724145934300](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230724145934300.png)
+
+配置成功后, Upstream中的新增消息都会同步到Downstream中, 无论是否已经被消费
+
+对于寄存的消息, 无法同步
 
 
-+ RabbitMq分发日志
-+ RabbitMq动态监听
-+ 分布式事务最终一致性

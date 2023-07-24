@@ -7,8 +7,11 @@
 export USERNAME=admin
 export PASSWORD=chenqf
 export VERSION=3.12.1
-export DOCKER_NAME=rabbitmq1
-docker run -d --name ${DOCKER_NAME} -e RABBITMQ_DEFAULT_USER=${USERNAME} -e RABBITMQ_DEFAULT_PASS=${PASSWORD} -p 15672:15672 -p 5672:5672 -p 25672:25672 -p 61613:61613 -p 1883:1883 rabbitmq:${VERSION}-management
+export DATA_DIR=/docker/rabbit/standalone
+export DOCKER_NAME=rabbitmq-standalone
+mkdir -p ${DATA_DIR}
+docker run -d --name ${DOCKER_NAME} -e RABBITMQ_DEFAULT_USER=${USERNAME} -e RABBITMQ_DEFAULT_PASS=${PASSWORD} \
+-v ${DATA_DIR}/master:/var/lib/rabbitmq -p 15671:15672 -p 5671:5672 rabbitmq:${VERSION}-management
 ```
 
 ## 集群部署 + 镜像模式 + HAProxy + Keepalived
@@ -50,7 +53,12 @@ docker network create ${RABBIT_NET_NAME}
 # 启动 master
 docker run -d --name ${DOCKER_MASTER_NAME} --hostname ${DOCKER_MASTER_NAME} --network ${RABBIT_NET_NAME} \
 -e RABBITMQ_DEFAULT_USER=${USERNAME} -e RABBITMQ_DEFAULT_PASS=${PASSWORD} --privileged=true \
--p ${P1}:15672 -v ${DATA_DIR}/master:/var/lib/rabbitmq rabbitmq:${VERSION}-management
+-p ${P1}:15672 -p5682:5672 -v ${DATA_DIR}/master:/var/lib/rabbitmq rabbitmq:${VERSION}-management
+# 开启联邦插件
+docker exec -it ${DOCKER_MASTER_NAME} rabbitmq-plugins enable rabbitmq_federation
+docker exec -it ${DOCKER_MASTER_NAME} rabbitmq-plugins enable rabbitmq_federation_management
+# 开启分片插件
+docker exec -it ${DOCKER_MASTER_NAME} rabbitmq-plugins enable rabbitmq_sharding
 
 sleep 2s
 for ((i=2; i<=${CLUSTER_NUM}; i++))
@@ -66,6 +74,12 @@ do
     docker stop ${DOCKER_NAME}${i} &> /dev/null
     docker start ${DOCKER_NAME}${i} &> /dev/null
     sleep 5s
+    # 开启联邦插件
+    docker exec -it ${DOCKER_NAME}${i} rabbitmq-plugins enable rabbitmq_federation
+    docker exec -it ${DOCKER_NAME}${i} rabbitmq-plugins enable rabbitmq_federation_management
+    # 开启分片插件
+    docker exec -it ${DOCKER_NAME}${i} rabbitmq-plugins enable rabbitmq_sharding
+    # 配置集群
     docker exec -it ${DOCKER_NAME}${i} rabbitmqctl stop_app
     docker exec -it ${DOCKER_NAME}${i} rabbitmqctl reset
     docker exec -it ${DOCKER_NAME}${i} rabbitmqctl join_cluster rabbit@${DOCKER_MASTER_NAME}
@@ -75,8 +89,11 @@ done
 docker exec -it ${DOCKER_MASTER_NAME} rabbitmqctl set_policy HA-ALL --vhost "${MIRROR_VHOST}" "^" '{"ha-mode":"all"}'
 # docker exec -it ${DOCKER_MASTER_NAME} rabbitmqctl cluster_status # 查看集群情况
 # 以下为 HAProxy
-mkdir -p /docker/haproxy
+sleep 2s
+docker stop haproxy &> /dev/null
+docker rm haproxy &> /dev/null
 rm -rf /docker/haproxy/*
+mkdir -p /docker/haproxy
 echo "global
     log 127.0.0.1 local3 info
     maxconn 4096
@@ -95,10 +112,10 @@ defaults
 listen rabbitmq_cluster
     bind 0.0.0.0:5672
     mode tcp
-    balance roundrobin" >> haproxy.cfg
+    balance roundrobin" >> /docker/haproxy/haproxy.cfg
 for ((i=1; i<=${CLUSTER_NUM}; i++))
 do
-  echo "    server ${DOCKER_NAME}${i} ${DOCKER_NAME}${i}:5672 check inter 2000 rise 2 fall 2" >> haproxy.cfg
+  echo "    server ${DOCKER_NAME}${i} ${DOCKER_NAME}${i}:5672 check inter 2000 rise 2 fall 2" >> /docker/haproxy/haproxy.cfg
 done
 echo "listen monitor
     bind 0.0.0.0:8100
@@ -106,15 +123,18 @@ echo "listen monitor
     option httplog
     stats enable
     stats uri /rabbit
-    stats refresh 5s" >> haproxy.cfg
-docker stop haproxy &> /dev/null
-docker rm haproxy &> /dev/null
+    stats refresh 5s" >> /docker/haproxy/haproxy.cfg
+
 docker run -d --name haproxy --network ${RABBIT_NET_NAME} -p5672:5672 -p8100:8100 -v /docker/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg haproxy:2.8.1
 #  docker exec -it -u 0 haproxy bash
 # TODO Keepalived
 ```
 
+docker exec -it rabbitmq1 rabbitmq-plugins enable rabbitmq_federation
+docker exec -it rabbitmq2 rabbitmq-plugins enable rabbitmq_federation
 
+docker exec -it rabbitmq2 rabbitmq-plugins enable rabbitmq_federation_management
+docker exec -it rabbitmq3 rabbitmq-plugins enable rabbitmq_federation_management
 
 
 
