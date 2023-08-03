@@ -174,9 +174,3 @@ eval $STR
   + maxclients 1000
 
 
-
-NAME=redis-sentinel1
-docker stop ${NAME}
-docker rm ${NAME}
-
-

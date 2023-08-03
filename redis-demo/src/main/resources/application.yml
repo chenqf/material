@@ -1,11 +1,11 @@
 server:
-  port: 8003
+  port: 8004
 spring:
   application:
     name: redis-demo
   redis:
     database: 0
-    host: ${CLOUD.IP}
-    port: 6379
     password: chenqfredis
     timeout: 3000
+    cluster:
+      nodes: ${ENV_CLOUD_IP}:6379,${ENV_CLOUD_IP}:6380,${ENV_CLOUD_IP}:6381,${ENV_CLOUD_IP}:6382,${ENV_CLOUD_IP}:6383,${ENV_CLOUD_IP}:6384,${ENV_CLOUD_IP}:6385,${ENV_CLOUD_IP}:6386,${ENV_CLOUD_IP}:6387

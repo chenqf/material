@@ -80,3 +80,47 @@ do
     ((SENTINEL_PORT=SENTINEL_PORT+1))
 done
 ```
+
+
+```shell
+# 几台从节点
+export MASTER_NAME=3
+# 几台哨兵节点
+export SLAVE_NUM=2
+export ALL_NUM=$((MASTER_NAME * (SLAVE_NUM + 1)))
+echo ${ALL_NUM}
+# 密码
+export REDIS_PASSWORD=chenqfredis
+export REDIS_BASE_DIR=/docker/redis/cluster/
+export REDIS_NET_NAME=redis-net
+export REDIS_VERSION=7.0.0
+export REDIS_PORT=6379
+#export SUBNET=192.168.1.0/24
+#export MASTER_IP=192.168.1.2
+docker pull redis:${REDIS_VERSION}
+
+export STR="docker exec -it redis-cluster-1 redis-cli -p ${REDIS_PORT} -a ${REDIS_PASSWORD} --cluster create --cluster-replicas ${SLAVE_NUM}"
+for ((i=1; i<=${ALL_NUM}; i++))
+do
+    docker stop redis-cluster-${i} &> /dev/null
+    docker rm redis-cluster-${i} &> /dev/null
+    rm -rf ${REDIS_BASE_DIR}/redis-cluster-${i}/conf
+    rm -rf ${REDIS_BASE_DIR}/redis-cluster-${i}/data
+    mkdir -p ${REDIS_BASE_DIR}/redis-cluster-${i}/conf
+    mkdir -p ${REDIS_BASE_DIR}/redis-cluster-${i}/data
+    PORT=$((REDIS_PORT + i - 1))
+    docker run -d --name redis-cluster-${i} --network ${REDIS_NET_NAME} -p ${PORT}:6379 \
+-v ${REDIS_BASE_DIR}/redis-cluster-${i}/conf:/usr/local/etc/redis -v ${REDIS_BASE_DIR}/redis-cluster-${i}/data:/data \
+-e REDIS_PASSWORD=${REDIS_PASSWORD} redis:${REDIS_VERSION} \
+--appendonly yes --requirepass ${REDIS_PASSWORD} --masterauth ${REDIS_PASSWORD} --protected-mode no --cluster-enabled yes
+  
+    IP_ADDRESS=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' redis-cluster-$i)
+    export STR="$STR 121.36.70.23:${PORT}"
+done
+
+eval $STR
+
+# 验证
+#docker exec -it redis-cluster-1 redis-cli -p 6379 -a chenqfredis  -c
+#> cluster nodes
+```
