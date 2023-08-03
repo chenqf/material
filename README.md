@@ -26,6 +26,8 @@
 + 分布式ID
 + 并发编程, https://www.bilibili.com/video/BV1EZ4y147qZ/?spm_id_from=333.337.search-card.all.click
 + 滑动窗口 jdhotkey
++ 六边形架构
++ 整洁架构
 
 
 

@@ -31,6 +31,13 @@
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 
+<!--        <dependency>-->
+<!--            <groupId>org.apache.commons</groupId>-->
+<!--            <artifactId>commons-pool2</artifactId>-->
+<!--            <version>2.11.0</version>-->
+<!--        </dependency>-->
+
+
         <dependency>
             <groupId>com.maple</groupId>
             <artifactId>common</artifactId>

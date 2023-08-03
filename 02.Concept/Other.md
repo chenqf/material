@@ -19,8 +19,12 @@ https://www.bilibili.com/video/BV1Td4y1b7DQ/?spm_id_from=333.337.search-card.all
 
 ### 时间轮算法
 
-### MQ延时消息
+### MQ
+
++ 一个消息如何让多个消费者缴费
 
 异步 VS 非阻塞
 
 极限 1.2W+ 
+
+## 

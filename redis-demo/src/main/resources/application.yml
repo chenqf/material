@@ -8,3 +8,4 @@ spring:
     host: ${CLOUD.IP}
     port: 6379
     password: chenqfredis
+    timeout: 3000
