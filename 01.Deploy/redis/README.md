@@ -159,18 +159,125 @@ eval $STR
 #> cluster nodes
 ```
 
+### 水平扩容
+
+1. 将新增节点添加到集群中
+
+```shell
+redis-cli -a <password> --cluster add-node <prev-master-node-ip>:<prev-master-node-port> <new-master-node-ip>:<new-master-node-port>
+redis-cli -a <password> --cluster add-node <prev-master-node-ip>:<prev-master-node-port> <new-slave-node-ip>:<new-slave-node-port>
+```
+
+2. 查看集群状态, 记录新主节点的ID
+
+```shell
+redis-cli -a <password> -c
+# > cluster nodes
+```
+
+3. 为新主节点分配hash槽
+
+```shell
+redis-cli -a <password> --cluster reshard <prev-master-node-ip>:<prev-master-node-port>
+```
+
+输出如下:
+
+... ...
+
+How many slots do you want to move (from 1 to 16384)? 600
+
+(ps:需要多少个槽移动到新的节点上，自己设置，比如600个hash槽)
+
+What is the receiving node ID? <new-master-node-id> (2728a594a0498e98e4b83a537e19f9a0a3790f38)
+
+(ps:把这600个hash槽移动到哪个节点上去，需要指定节点id)
+
+Please enter all the source node IDs.
+
+Type 'all' to use all the nodes as source nodes for the hash slots.
+
+Type 'done' once you entered all the source nodes IDs.
+
+Source node 1:all
+
+(ps:输入all为从所有主节点(8001,8002,8003)中分别抽取相应的槽数指定到新节点中，抽取的总槽数为600个)
+
+... ...
+
+Do you want to proceed with the proposed reshard plan (yes/no)? yes
+
+(ps:输入yes确认开始执行分片任务)
+
+... ...
+
+4. 给新主节点添加从节点
+
+进入从节点, 使用集群命令将当前节点指定到新主节点下
+
+```shell
+redis-cli -a <password> -c -h <new-slave-node-ip> -p <new-slave-node-port>
+# > cluster replicate <new-master-node-id> #后面这串id为新master节点id
+```
 
 
+### 水平缩容
 
+2. 查看集群状态, 记录新主节点的ID, 记录新从节点ID
 
+```shell
+redis-cli -a <password> -c
+# > cluster nodes
+```
 
+2. 删除新从节点
 
+```shell
+redis-cli -a <password> --cluster del-node <new-slave-node-ip>:<new-slave-node-port> <new-slave-node-id>
+```
 
+3. 将主节点的hash槽分配到其他节点
 
+```shell
+redis-cli -a <password> reshard <new-master-node-ip>:<new-master-node-port>
+```
 
-## Redis 配置 redis.conf
+输出如下：
+... ...
 
-+ 最大客户端连接数
-  + maxclients 1000
+How many slots do you want to move (from 1 to 16384)? 600 
+
+What is the receiving node ID? dfca1388f124dec92f394a7cc85cf98cfa02f86f
+
+(ps:这里是需要把数据移动到哪？)
+
+Please enter all the source node IDs.
+
+Type 'all' to use all the nodes as source nodes for the hash slots.
+
+Type 'done' once you entered all the source nodes IDs.
+
+Source node 1:2728a594a0498e98e4b83a537e19f9a0a3790f38
+
+(ps:这里是需要数据源，当前要删除的master-node-id)
+
+Source node 2:done
+
+(ps:这里直接输入done 开始生成迁移计划)
+
+... ...
+
+Do you want to proceed with the proposed reshard plan (yes/no)? Yes
+
+(ps:这里输入yes开始迁移)
+
+> 目前只能把master的数据迁移到一个节点上，暂时做不了平均分配功能
+
+2. 删除新主节点
+
+```shell
+redis-cli -a <password> --cluster del-node <new-master-node-ip>:<new-master-node-port> <new-master-node-id>
+```
+
 
 
