@@ -25,6 +25,7 @@
         <module>stream-demo</module>
         <module>lock-redis</module>
         <module>juc-demo</module>
+        <module>mongo-demo</module>
     </modules>
     <name>material</name>
     <description>material</description>

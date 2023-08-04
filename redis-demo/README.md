@@ -122,6 +122,8 @@ aof-use-rdb-preamble yes # 开启混合持久化
 
 ![image-20230726125817878](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230726125817878.png)
 
+> 7.0+ 多从库像主库复制时, 会公用RDB文件
+
 从节点 redis.conf 配置:
 
 ```shell
@@ -174,7 +176,6 @@ spring:
 + 哨兵选举master节点实现主从切换的过程中, Redis访问中断
 + 哨兵模式只有一个节点对外提供服务, 没法很好的并发
 + 单个主节点内存不宜设置过大(小于10G), 否则导致持久化文件过大, 影响数据恢复/主从同步效率
-
 
 ## 高可用集群架构
 
@@ -262,7 +263,19 @@ mset {user1}:1:name zhuge {user1}:1:age 18
 
 假设name和age计算的hash slot值不一样，但是这条命令在集群下执行，redis只会用大括号里的 user1 做hash slot计算，所以算出来的slot值肯定相同，最后都能落在同一slot
 
-## 非常用
+### big-key
+
+1. string类型, value超过10kb
+2. hash/list/set/zset, 元素过多, 超过5000
+
+危害:
+
+1. 导致redis阻塞
+2. 导致网络阻塞
+
+> 设置 lazyfree-lazy-expire yes , 防止big-key过期自动同步删除, 导致redis阻塞
+
+## 非常用命令
 
 + 压测命令:
 
@@ -286,7 +299,24 @@ SCAN cursor match <pattern> count <number>
 
 ### 管道
 
+客户端行为, 服务端操作方式不变, 仅仅只是客户端一次性发送给服务器
+
 不具有原子性, 仅是多条命令一次性发送, 减少网络消耗, 命令的执行还是单挑执行
+
+### 事务
+
+服务端行为, 将一组需要一起执行的命令放到`multi`和`exec`两个命令之间
+
++ 命令错误, 其他命令会回滚
++ 命令正确, 执行过程中出错, 不会回滚
+
+> 功能很弱,不建议使用, 建议使用Lua脚本
+
+### 乐观锁
+
++ multi: 开启事务
++ exec:  执行事务
++ watch: 监控一个或多个key值, 如果在exec执行前,key值发生变化,取消事务执行
 
 ### Lua 脚本
 
@@ -294,7 +324,54 @@ SCAN cursor match <pattern> count <number>
 + 原子操作, 作为整体执行, 中间不会插入其他命令
 + 替代redis的事务
 
-## 直接使用
+### 慢查询日志: slowlog
+
+```shell
+#查询有关慢日志的配置信息
+config get slow* 
+#设置慢日志使时间阈值,单位微秒，此处为20毫秒
+# 即超过20毫秒的操作都会记录下来，生产环境建议设置1000，也就是1ms，这样理论上redis并发至少达到1000
+#如果要求单机并发达到1万以上，这个值可以设置为100
+config set slowlog-log-slower-than 20000 
+#设置慢日志记录保存数量，如果保存数量已满，会删除最早的记录
+#最新的记录追加进来。记录慢查询日志时Redis会对长命令做截断操作，并不会占用大量内存
+#建议设置稍大些，防止丢失日志
+config set slowlog-max-len 1024 
+#将服务器当前所使用的配置保存到redis.conf
+config rewrite 
+#获取慢查询日志列表的当前长度
+slowlog len 
+#获取最新的5条慢查询日志。慢查询日志由四个属性组成：标识ID，发生时间戳，命令耗时，执行命令和参数
+slowlog get 5 
+#重置慢查询日志
+slowlog reset 
+```
+
+### HyperLoglog
+
+通过 HyperLogLog 可以利用极小的内存空间完成独立总数的统计
+
+对比set, 若set的容量为80M, 对应HyperLoglog容量为15k
+
+常用与统计页面UV (数据量大, 须去重, 允许少量不精确)
+
++ pfadd
+  + 用于向 HyperLogLog 添加元素,如果添加成功返回 1
++ pfcount
+  + 用于计算一个或多个 HyperLogLog 的独立总数
++ pfmerge
+  + 可以求出多个 HyperLogLog 的并集并赋值给 new_key
+
+```shell
+pfadd 08-15:u:id "u1" "u2" "u3" "u4"
+pfcount 08-15:u:id
+pfmerge new_key key1 key2
+```
+
++ 大数据误差率: 0.81%
++ 小数据误差率: 1-2%
+
+## RedisTemplate使用
 
 + opsForValue : 字符串
 + opsForList  : 列表
@@ -589,18 +666,9 @@ public class DemoService {
 
 ### 作为缓存
 
-
-
 ## 多数据源
-TODO 
-
-## Redisson
-
+TODO
 
 ## 布隆过滤器
 
 TODO
-
-## 哈希碰撞
-
-rehash 是什么?

@@ -27,4 +27,25 @@ https://www.bilibili.com/video/BV1Td4y1b7DQ/?spm_id_from=333.337.search-card.all
 
 极限 1.2W+ 
 
-## 
+## 批量删除容器
+
+```shell
+#!/bin/bash
+
+keyword="mongo"
+# 将命令输出的容器名存储到数组中
+readarray -t container_names <<< "$(docker ps -a --format '{{.Names}}' | grep "$keyword")"
+# 遍历数组
+for container_name in "${container_names[@]}"; do
+  # 检查容器是否存在
+  if docker ps -a --format '{{.Names}}' | grep -q "$container_name"; then
+    # 停止容器
+    docker stop "$container_name"
+    # 删除容器
+    docker rm "$container_name"
+    echo "容器 $container_name 删除成功"
+  else
+    echo "容器 $container_name 不存在，跳过删除"
+  fi
+done
+```

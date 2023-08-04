@@ -103,7 +103,6 @@ public class StockService {
         }finally {
             lock.unlock();
         }
-
     }
 
     public void deduct(){
@@ -430,7 +429,6 @@ public class StockService {
 + UUID结合线程ID确保只能对自己的锁解锁
 + 通过线程ID确保可重入
 
-TODO 主从下好像有问题
 ```java
 public class RedisDistributedLock implements Lock {
 
