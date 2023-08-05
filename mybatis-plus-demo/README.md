@@ -177,7 +177,42 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
 }
 ```
 
-### 枚举字段
+## 枚举字段
+
+使用`@EnumValue`标识数据存储时使用对应字段值
+
+```java
+@Getter
+@AllArgsConstructor
+public enum SexEnum{
+    MALE(1, "男"),
+    FEMALE(2,"女"),
+    UNKNOWN(3,"未知");
+
+    @EnumValue
+    private final int value;
+    private final String desc;
+
+    @Override
+    public String toString() {
+        return this.desc;
+    }
+}
+```
+```java
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@TableName("user")
+public class User extends BaseEntity {
+    // ...
+    private SexEnum sex; // 使用枚举作为类型
+}
+```
+
+## 冗余字段处理
+
+## 表字段加解密
 
 ## 多数据源
 

@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.maple.mp.entity.User;
+import com.maple.mp.enums.SexEnum;
 import com.maple.mp.mapper.UserMapper;
 import com.maple.mp.service.UserService;
 import org.apache.commons.lang3.StringUtils;
@@ -30,6 +31,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setName("crh");
         user.setAge(33);
         user.setEmail("dddd@qq.com");
+        user.setSex(SexEnum.FEMALE);
         return userMapper.insert(user);
     }
 

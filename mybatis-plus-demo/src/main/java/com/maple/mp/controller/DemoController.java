@@ -32,11 +32,11 @@ public class DemoController {
     }
 
 
-    @GetMapping("/test1")
-    public String test1(){
-        List<User> users = userService.queryByWrapper1();
+    @GetMapping("/users")
+    public List<User> users(){
+        List<User> users = userService.queryByWrapper3();
         users.forEach(System.out::println);
-        return "111111";
+        return users;
     }
 
     @GetMapping("/test4")

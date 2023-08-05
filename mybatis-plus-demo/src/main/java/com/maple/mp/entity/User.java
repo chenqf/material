@@ -2,6 +2,7 @@ package com.maple.mp.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import com.maple.mp.entity.base.BaseEntity;
+import com.maple.mp.enums.SexEnum;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -24,4 +25,5 @@ public class User extends BaseEntity {
     private Integer isDelete;
     @Version
     private Integer version;
+    private SexEnum sex;
 }
