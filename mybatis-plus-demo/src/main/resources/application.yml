@@ -1,0 +1,16 @@
+server:
+  port: 8012
+spring:
+  application:
+    name: mybatis-plus-demo
+  datasource:
+    url: jdbc:mysql://${ENV_CLOUD_IP}:3307/mybatis_plus?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  # 配置类型别名对应的包
+  type-aliases-package: com.maple.mp.entity

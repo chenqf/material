@@ -108,6 +108,44 @@ show slave status; # Slave_IO_Running Yes / Slave_SQL_Running Yes   :代表同�
 
 若出现同步不一致, 可按上面步骤重新同步
 
+### 半同步复制集群
+
+再原有基础上, 执行一下操作:
+
+```shell
+# 登陆主服务
+docker exec -it mysql-master mysql -uroot -p
+```
+
+```shell
+# 通过扩展库来安装半同步复制模块
+install plugin rpl_semi_sync_master soname 'semisync_master.so';
+# 查看系统全局参数，rpl_semi_sync_master_timeout就是半同步复制时等待应答的最长等待时间
+show global variables like 'rpl_semi%';
+# 是打开半同步复制的开关。
+set global rpl_semi_sync_master_enabled=ON;
+exit
+```
+
+```shell
+# 登陆从服务
+docker exec -it mysql-slave mysql -uroot -p
+```
+
+```shell
+# 通过扩展库来安装半同步复制模块
+install plugin rpl_semi_sync_slave soname 'semisync_slave.so';
+# 是打开半同步复制的开关。
+set global rpl_semi_sync_slave_enabled = on;
+# 查看系统全局参数
+show global variables like 'rpl_semi%';
+# 重启slave服务
+stop slave;
+start slave;
+exit
+```
+
+
 ### 扩容与数据迁移
 
 是如果我们的集群是已经运行过一段时间，这时候如果要扩展新的从节点就有一个问题，之前的数据没办法从binlog来恢复了
