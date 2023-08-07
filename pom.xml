@@ -27,6 +27,7 @@
         <module>juc-demo</module>
         <module>mongo-demo</module>
         <module>mybatis-plus-demo</module>
+        <module>mysql-mp-demo</module>
     </modules>
     <name>material</name>
     <description>material</description>
