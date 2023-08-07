@@ -3,7 +3,7 @@
 
 ## 常用注解
 
-+ @TableName  指定表明
++ @TableName  表名注解，标识实体类对应的表
 + @TableId    指定主键
 + @TableField 指定表中的字段 / 处理`公共字段填充`
 + @TableLogic 指定逻辑删除字段, 设置后无力删除变更为逻辑删除
@@ -35,6 +35,12 @@ public class User {
 
 + 分页插件
 + 乐观锁插件
++ 逻辑多租户隔离插件
+  + 业务表增加租户字段, 多个租户数据在同一张表中, 通过租户字段进行隔离
+  + 须放在分页插件之前
++ 防全表更新与删除插件
++ 动态表名插件
+  + 可实现表级多租户隔离
 
 ```java
 @Configuration
@@ -42,14 +48,46 @@ public class MybatisPlusConfig {
     @Bean
     public MybatisPlusInterceptor mybatisPlusInterceptor() {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
+        // 逻辑租户隔离
+        interceptor.addInnerInterceptor(new TenantLineInnerInterceptor(new TenantLineHandler() {
+           @Override
+           public Expression getTenantId() {
+              // 通过request或其他方式,获取租户ID
+              // HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+              return new LongValue(1);
+           }
+           @Override
+           public boolean ignoreTable(String tableName) {
+              // 当前表是否要进行租户过滤
+              return "user".equalsIgnoreCase(tableName);
+           }
+           @Override
+           public String getTenantIdColumn() {
+              // 租户字段名
+              return "tenant_id";
+           }
+        }));
         //添加分页插件
         interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));
         //添加乐观锁插件
         interceptor.addInnerInterceptor(new OptimisticLockerInnerInterceptor());
+        //防全表更新与删除插件
+        interceptor.addInnerInterceptor(new BlockAttackInnerInterceptor());
+        //动态表名 - 对XML中的sql也生效
+        DynamicTableNameInnerInterceptor dynamicTableNameInnerInterceptor = new DynamicTableNameInnerInterceptor();
+        dynamicTableNameInnerInterceptor.setTableNameHandler((sql, tableName) -> {
+           // 通过request或其他方式,获取表名
+           HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+           String dynamicTableSuffix = request.getParameter("suffix");
+           return tableName + (dynamicTableSuffix == null ? "" : dynamicTableSuffix); // 返回真实表名
+        });
+        interceptor.addInnerInterceptor(dynamicTableNameInnerInterceptor);
         return interceptor;
     }
 }
 ```
+
+> 逻辑多租户 + 动态表名, 存在冲突问题, sql中TenantId的追加指向的还是原表名, 2者同时使用时使用其他方案
 
 > 更新数据时,若使用UpdateWrapper并且需要乐观锁功能, 必须将实例类实例传入update方法
 
@@ -116,6 +154,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         System.out.println("是否有下一页："+page.hasNext());
     }
 }
+```
+
+### 动态表名
+
+```java
+
 ```
 
 ## 公共字段自动填充
@@ -210,18 +254,22 @@ public class User extends BaseEntity {
 }
 ```
 
+## 逻辑隔离多租户
+
+TODO 
+
+1. 数据库存储租户与之对应的数据库
+2. 代码中根据数据库中的数据创建多个数据源
+3. 定义@Tenant+AOP, 动态获取tenantId,并指定当前数据源
+
 ## 冗余字段处理
 
 ## 表字段加解密
 
-## 多数据源
-
-每个请求都有一个sqlSession
-
-## 表自动创建 & 数据自动填充
 
 水平拆分 & 垂直拆分
 
 多租户, 保护防止误操作
  表自动创建: spring.sql.init.schema-locations
+多表查询, 如何返回对象
 

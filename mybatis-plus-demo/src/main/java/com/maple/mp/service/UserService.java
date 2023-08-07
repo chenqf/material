@@ -27,4 +27,6 @@ public interface UserService extends IService<User> {
     void testPage();
 
     void testPageForXml();
+
+    User findUserById(Long id);
 }

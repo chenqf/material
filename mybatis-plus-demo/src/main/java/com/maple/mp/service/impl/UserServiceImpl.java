@@ -172,4 +172,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         System.out.println("是否有上一页："+page.hasPrevious());
         System.out.println("是否有下一页："+page.hasNext());
     }
+
+    @Override
+    public User findUserById(Long id) {
+        return userMapper.findUserById(id);
+    }
 }

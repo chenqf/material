@@ -6,4 +6,7 @@
    <select id="selectPageVo" resultType="User">
        select * from user where age = #{age}
    </select>
+    <select id="findUserById" resultType="User">
+        select u.*,s.* from user as u left join shop as s ON u.id = s.fk_user_id where u.id = #{id}
+    </select>
 </mapper>
