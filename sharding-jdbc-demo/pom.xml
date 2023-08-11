@@ -9,7 +9,7 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>mysql-mp-demo</artifactId>
+    <artifactId>sharding-jdbc-demo</artifactId>
     <name>sharding-jdbc-demo</name>
 
 
@@ -24,17 +24,44 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+<!--            <exclusions>-->
+<!--                <exclusion>-->
+<!--                    <artifactId>snakeyaml</artifactId>-->
+<!--                    <groupId>org.yaml</groupId>-->
+<!--                </exclusion>-->
+<!--            </exclusions>-->
         </dependency>
+        <!--   数据源连接池     -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-aop</artifactId>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid</artifactId>
+            <version>1.1.20</version>
         </dependency>
-
+        <!-- mysql连接驱动 -->
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <scope>runtime</scope>
         </dependency>
+
+<!--        <dependency>-->
+<!--            <groupId>org.yaml</groupId>-->
+<!--            <artifactId>snakeyaml</artifactId>-->
+<!--            <version>1.33</version>-->
+<!--        </dependency>-->
+
+        <dependency>
+            <groupId>org.apache.shardingsphere</groupId>
+            <artifactId>shardingsphere-jdbc-core-spring-boot-starter</artifactId>
+            <version>5.1.1</version>
+<!--            <exclusions>-->
+<!--                <exclusion>-->
+<!--                    <artifactId>snakeyaml</artifactId>-->
+<!--                    <groupId>org.yaml</groupId>-->
+<!--                </exclusion>-->
+<!--            </exclusions>-->
+        </dependency>
+
 
         <dependency>
             <groupId>com.baomidou</groupId>

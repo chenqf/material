@@ -28,6 +28,7 @@
         <module>mongo-demo</module>
         <module>mybatis-plus-demo</module>
         <module>mysql-mp-demo</module>
+        <module>sharding-jdbc-demo</module>
     </modules>
     <name>material</name>
     <description>material</description>
