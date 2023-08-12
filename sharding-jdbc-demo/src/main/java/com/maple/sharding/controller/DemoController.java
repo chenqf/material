@@ -3,6 +3,7 @@ package com.maple.sharding.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.maple.sharding.aop.ShardingMasterOnly;
 import com.maple.sharding.entity.Course;
 import com.maple.sharding.entity.Item;
 import com.maple.sharding.entity.Order;
@@ -45,11 +46,17 @@ public class DemoController {
         return "插入成功";
     }
 
-
-
     @GetMapping("/getUser")
+    @ShardingMasterOnly
     public List<User> getUser(){
+        int i = 1/0;
         return this.userMapper.selectList(null);
+    }
+
+    @GetMapping("/getUser1")
+    public List<User> getUser1(){
+        List<User> users = this.userMapper.selectList(null);
+        return users;
     }
 
     @GetMapping("/insertOrder")

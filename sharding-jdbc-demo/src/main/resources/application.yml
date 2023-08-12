@@ -13,13 +13,7 @@ spring:
     datasource:
       sharding:
         default-data-source-name: m1
-      names: m1,m2
-#      m0:
-#        type: com.zaxxer.hikari.HikariDataSource
-#        driver-class-name: com.mysql.cj.jdbc.Driver
-#        jdbc-url: jdbc:mysql://${ENV_CLOUD_IP}:3306/demo?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
-#        username: root
-#        password: 123456
+      names: m1,m2,s1,s2
       m1:
         type: com.zaxxer.hikari.HikariDataSource
         driver-class-name: com.mysql.cj.jdbc.Driver
@@ -32,7 +26,36 @@ spring:
         jdbc-url: jdbc:mysql://${ENV_CLOUD_IP}:3307/sharding_2?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
         username: root
         password: 123456
+      s1:
+        type: com.zaxxer.hikari.HikariDataSource
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        jdbc-url: jdbc:mysql://${ENV_CLOUD_IP}:3308/sharding_1?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
+        username: root
+        password: 123456
+      s2:
+        type: com.zaxxer.hikari.HikariDataSource
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        jdbc-url: jdbc:mysql://${ENV_CLOUD_IP}:3308/sharding_2?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
+        username: root
+        password: 123456
     rules:
+      readwrite-splitting:
+        data-sources:
+          myds1:
+            type: Static
+            props:
+              write-data-source-name: m1
+              read-data-source-names: s1
+            load-balancer-name: alg_round
+          myds2:
+            type: Static
+            props:
+              write-data-source-name: m2
+              read-data-source-names: s2
+            load-balancer-name: alg_round
+        load-balancers:
+          alg_round:
+            type: ROUND_ROBIN
       sharding:
         key-generators:
           my_id_for_snowflake_alg:
@@ -41,39 +64,32 @@ spring:
               worker:
                 id: 1
         tables:
-#          user:
-#            actual-data-nodes: m0.user
-          t_order:
-            actual-data-nodes: m1.t_order
-          item:
-            actual-data-nodes: m1.item
           course:
             actual-data-nodes: m$->{[1,2]}.course_$->{0..2}
             database-strategy:
-#              standard:
-#                sharding-algorithm-name: db_standard_alg
-#                sharding-column: id
+              standard:
+                sharding-algorithm-name: db_standard_alg
+                sharding-column: id
 #              complex:
 #                sharding-columns: id,user_id
 #                sharding-algorithm-name: db_complex_alg
 #              hint:
 #                sharding-algorithm-name: db_hint_alg
-#            table-strategy:
 #              standard:
+#                sharding-algorithm-name: db_class_base_standard_alg
 #                sharding-column: id
-#                sharding-algorithm-name: table_standard_alg
+            table-strategy:
+              standard:
+                sharding-column: id
+                sharding-algorithm-name: table_standard_alg
 #              complex:
 #                sharding-columns: id,user_id
 #                sharding-algorithm-name: table_complex_alg
 #              hint:
 #                sharding-algorithm-name: table_hint_alg
-              standard:
-                sharding-algorithm-name: db_class_base_standard_alg
-                sharding-column: id
-            table-strategy:
-              standard:
-                sharding-column: id
-                sharding-algorithm-name: table_class_base_standard_alg
+#              standard:
+#                sharding-column: id
+#                sharding-algorithm-name: table_class_base_standard_alg
         sharding-algorithms:
           db_standard_alg:
             type: INLINE

@@ -20,12 +20,7 @@
 + 数据备份
 + 数据迁移
 + 分布式事务
-+ SQL路由问题
-  + 行SQL语句检索数据时，如何快速定位到目标数据所在的数据库服务
-+ 跨节点查询, 归并问题
-  + limit
-  + order by
-  + 等
+
 
 ## Mysql服务搭建
 
@@ -379,9 +374,116 @@ public class MyDbStandardAlgorithm implements StandardShardingAlgorithm {
 
 ### 读写分离
 
+> 将数据库拆分为主库和从库，主库负责处理事务性的增删改操作，从库负责处理查询操作，能够有效的避免由数据更新导致的行锁，使得整个系统的查询性能得到极大的改善
+> 
+> 通过一主多从的配置方式，可以将查询请求均匀的分散到多个数据副本，能够进一步的提升系统的处理能力
+
 通过SQL语义分析, 实现读写分离, 将读写发送到不同的数据库中
 
-@MasterOnly
+```yaml
+spring:
+  shardingsphere:
+    datasource:
+      sharding:
+        default-data-source-name: m1
+      names: m1,m2,s1,s2
+      m1:
+        type: com.zaxxer.hikari.HikariDataSource
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        jdbc-url: jdbc:mysql://${ENV_CLOUD_IP}:3307/sharding_1?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
+        username: root
+        password: 123456
+      m2:
+        type: com.zaxxer.hikari.HikariDataSource
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        jdbc-url: jdbc:mysql://${ENV_CLOUD_IP}:3307/sharding_2?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
+        username: root
+        password: 123456
+      s1:
+        type: com.zaxxer.hikari.HikariDataSource
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        jdbc-url: jdbc:mysql://${ENV_CLOUD_IP}:3308/sharding_1?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
+        username: root
+        password: 123456
+      s2:
+        type: com.zaxxer.hikari.HikariDataSource
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        jdbc-url: jdbc:mysql://${ENV_CLOUD_IP}:3308/sharding_2?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
+        username: root
+        password: 123456
+    rules:
+      readwrite-splitting:
+        data-sources:
+          myds1:
+            type: Static
+            props:
+              write-data-source-name: m1
+              read-data-source-names: s1
+            load-balancer-name: alg_round
+          myds2:
+            type: Static
+            props:
+              write-data-source-name: m2
+              read-data-source-names: s2
+            load-balancer-name: alg_round
+        load-balancers:
+          alg_round:
+            type: ROUND_ROBIN
+```
+
+**若在读请求中强制使用主库:**
+```java
+@RestController
+@RequestMapping("/demo")
+public class DemoController {
+    @Autowired
+    private UserMapper userMapper;
+
+    @GetMapping("/getUser")
+    public List<User> getUser(){
+  
+      HintManager instance = HintManager.getInstance(); // 获取管理器
+      instance.setWriteRouteOnly(); // 强制使用主库
+  
+      List<User> users = this.userMapper.selectList(null);
+  
+      instance.setReadwriteSplittingAuto(); // 恢复自动读写分离
+  
+      return users;
+    }
+}
+```
+
+**通过注解实现:**
+
+```java
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE, ElementType.METHOD})
+public @interface ShardingMasterOnly {
+}
+```
+
+```java
+@Component
+@Aspect
+@Slf4j
+public class ShardingMasterAspect {
+    @Pointcut("@annotation(com.maple.sharding.aop.ShardingMasterOnly)")
+    public void cutPointcut() {}
+    
+    @Around("cutPointcut()")
+    public Object masterOnly(ProceedingJoinPoint joinPoint) throws Throwable {
+        HintManager instance = HintManager.getInstance();
+        try{
+            instance.setWriteRouteOnly();
+            return joinPoint.proceed();
+        }finally {
+            instance.setReadwriteSplittingAuto();
+            instance.close();
+        }
+    }
+}
+```
 
 ### 关联表
 
