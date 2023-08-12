@@ -16,7 +16,7 @@ import javax.servlet.http.HttpServletRequest;
 /**
  * @author 陈其丰
  */
-//@Configuration
+@Configuration
 public class MybatisPlusConfig {
     @Bean
     public MybatisPlusInterceptor mybatisPlusInterceptor() {

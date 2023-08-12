@@ -12,7 +12,7 @@ import java.util.Date;
 /**
  * @author 陈其丰
  */
-//@Component
+@Component
 public class MyMetaObjectHandler implements MetaObjectHandler {
 
     @Override

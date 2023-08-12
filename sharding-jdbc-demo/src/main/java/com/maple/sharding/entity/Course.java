@@ -15,9 +15,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @TableName
-//public class Course extends BaseEntity {
-public class Course {
+public class Course extends BaseEntity {
     @TableId(type = IdType.AUTO)
     private Long id;
     private String name;
+    private Long userId;
 }
