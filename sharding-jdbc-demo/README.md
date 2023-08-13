@@ -488,7 +488,20 @@ public class ShardingMasterAspect {
 
 ### 关联表
 
-避免跨库关联, 关联表放到一个库中
+绑定表指分片规则一致的一组分片表。
+
+使用绑定表进行多表关联查询时，必须使用分片键进行关联，`确保分片键是关联条件`, 否则会出现笛卡尔积关联或跨库关联，从而影响查询效率。
+
+**配置:**
+
+```yaml
+spring:
+  shardingsphere:
+    rules:
+      sharding:
+        binding-tables:
+          - course,book # 此处配置多个关联表
+```
 
 ### 广播表 ( 公共表 / 字典表 )
 

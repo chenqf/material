@@ -64,8 +64,31 @@ spring:
               worker:
                 id: 1
         tables:
+          item:
+            actual-data-nodes: mrw1.item
+          course_book:
+            actual-data-nodes: mrw$->{[1,2]}.course_book_$->{0..2}
+            database-strategy:
+              standard:
+                sharding-algorithm-name: db_test_standard_alg
+                sharding-column: fk_course_id
+            table-strategy:
+              standard:
+                sharding-column: fk_course_id
+                sharding-algorithm-name: table_test_standard_alg
           value_set_item:
             actual-data-nodes: mrw$->{[1,2]}.value_set_item
+#          course_detail:
+#            actual-data-nodes: mrw$->{[1,2]}.course_detail_$->{0..2}
+#            actual-data-nodes: m1.course_detail_0
+#            database-strategy:
+#              standard:
+#                sharding-algorithm-name: db_standard_alg
+#                sharding-column: id
+#            table-strategy:
+#              standard:
+#                sharding-column: id
+#                sharding-algorithm-name: table_standard_alg
           course:
             actual-data-nodes: mrw$->{[1,2]}.course_$->{0..2}
             database-strategy:
@@ -131,6 +154,16 @@ spring:
             props:
               strategy: STANDARD
               algorithmClassName: com.maple.sharding.algorithm.MyTbStandardAlgorithm
+          table_test_standard_alg:
+            type: INLINE
+            props:
+              algorithm-expression: course_book_$->{fk_course_id % 3}
+              allow-range-query-with-inline-sharding: true
+          db_test_standard_alg:
+            type: INLINE
+            props:
+              algorithm-expression: mrw$->{fk_course_id % 2 + 1}
+              allow-range-query-with-inline-sharding: true
         default-key-generate-strategy:
           column: id
           key-generator-name: my_id_for_snowflake_alg
@@ -139,6 +172,8 @@ spring:
             sharding-algorithm-name: db_standard_alg
             sharding-column: id
         broadcast-tables: value_set_item
+        binding-tables:
+          - course,course_book
       encrypt:
         tables:
           user:

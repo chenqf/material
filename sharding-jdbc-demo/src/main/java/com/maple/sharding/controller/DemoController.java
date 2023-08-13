@@ -25,6 +25,9 @@ public class DemoController {
     private CourseMapper courseMapper;
 
     @Autowired
+    private CourseBookMapper courseBookMapper;
+
+    @Autowired
     private UserMapper userMapper;
 
     @Autowired
@@ -35,6 +38,9 @@ public class DemoController {
 
     @Autowired
     private ValueSetItemMapper valueSetItemMapper;
+
+    @Autowired
+    private CourseDetailMapper courseDetailMapper;
 
     @GetMapping("/insertValueSetItem/{code}/{name}")
     public ValueSetItem insertValueSetItem(@PathVariable String code, @PathVariable String name){
@@ -108,29 +114,57 @@ public class DemoController {
         return "插入成功";
     }
 
+    @GetMapping("/insertDetail")
+    public String insertDetail(){
+        CourseDetail item = new CourseDetail();
+        item.setDesc("dddd");
+//        item.setFkCourseId(123123L);
+        this.courseDetailMapper.insert(item);
+        return "插入成功";
+    }
+
+    @GetMapping("/insertBook")
+    public String insertBook(){
+        CourseBook item = new CourseBook();
+        item.setName("chenqf");
+        item.setFkCourseId(123123L);
+        this.courseBookMapper.insert(item);
+        return "插入成功";
+    }
+
     @GetMapping("/getItem")
     public List<Item> getItem(){
         return this.itemMapper.selectList(null);
     }
 
-    @GetMapping("/insertCourse")
-    public String insertCourse(){
-        for (long i = 0; i < 10; i++) {
-//            Long id = i+1;
-//            Long userId = (long) new Random().nextInt(200);
-//            String str = "m" + ((id + userId) % 2 + 1) + ".course_" + ((id + userId) % 3);
-            Course course = new Course();
-            course.setName("course_" + i);
-            course.setUserId((long) new Random().nextInt(200));
-//            course.setId(id);
-            this.courseMapper.insert(course);
-        }
-        return "插入成功";
+    @GetMapping("/insertCourseAndBook")
+    public List insertCourse(){
+
+        Course course = new Course();
+        course.setName("语文");
+        this.courseMapper.insert(course);
+
+        CourseBook item = new CourseBook();
+        item.setName("chenqf");
+        item.setFkCourseId(course.getId());
+        this.courseBookMapper.insert(item);
+
+        return Arrays.asList(course,item);
     }
 
-    @GetMapping("/deleteCourse")
+    @GetMapping("/getCourseAndBook/{courseId}")
+    public String getCourseAndBook(@PathVariable Long courseId){
+        this.courseMapper.selectCourseWithBooksById(courseId);
+        return "查询成功";
+    }
+
+
+
+    @GetMapping("/delete")
     public String deleteCourse(){
         this.courseMapper.delete(null);
+        this.courseBookMapper.delete(null);
+//        this.courseDetailMapper.delete(null);
         return "删除成功";
     }
 

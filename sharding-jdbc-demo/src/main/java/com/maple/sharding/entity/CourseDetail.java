@@ -8,19 +8,15 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 /**
  * @author 陈其丰
  */
+
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 @TableName
-public class Course extends BaseEntity {
+public class CourseDetail {
     @TableId(type = IdType.AUTO)
     private Long id;
-    private String name;
-    private Long userId;
-//    private List<Book> books;
+//    private Long fkCourseId;
+    private String desc;
 }
