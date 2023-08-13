@@ -41,13 +41,13 @@ spring:
     rules:
       readwrite-splitting:
         data-sources:
-          myds1:
+          mrw1:
             type: Static
             props:
               write-data-source-name: m1
               read-data-source-names: s1
             load-balancer-name: alg_round
-          myds2:
+          mrw2:
             type: Static
             props:
               write-data-source-name: m2
@@ -65,9 +65,9 @@ spring:
                 id: 1
         tables:
           value_set_item:
-            actual-data-nodes: m$->{[1,2]}.value_set_item
+            actual-data-nodes: mrw$->{[1,2]}.value_set_item
           course:
-            actual-data-nodes: m$->{[1,2]}.course_$->{0..2}
+            actual-data-nodes: mrw$->{[1,2]}.course_$->{0..2}
             database-strategy:
               standard:
                 sharding-algorithm-name: db_standard_alg
@@ -96,17 +96,17 @@ spring:
           db_standard_alg:
             type: INLINE
             props:
-              algorithm-expression: m$->{id % 2 + 1}
+              algorithm-expression: mrw$->{id % 2 + 1}
               allow-range-query-with-inline-sharding: true
           db_complex_alg:
             type: COMPLEX_INLINE
             props:
-              algorithm-expression: m$->{(id + user_id) % 2 + 1}
+              algorithm-expression: mrw$->{(id + user_id) % 2 + 1}
               allow-range-query-with-inline-sharding: true
           db_hint_alg:
             type: HINT_INLINE
             props:
-              algorithm-expression: m$->{value}
+              algorithm-expression: mrw$->{value}
           db_class_base_standard_alg:
             type: CLASS_BASED
             props:
