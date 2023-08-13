@@ -36,7 +36,6 @@
 + 分布式主键生成算法 
 + 分片策略
 
-
 ## 拆分方式
 
 + 垂直分库 - 把单一数据库, 按照业务进行划分, 专库专表 TODO 跨库级联查询
@@ -49,7 +48,7 @@
 ### 基本配置
 
 ```xml
- <dependency>
+<dependency>
     <groupId>org.apache.shardingsphere</groupId>
     <artifactId>shardingsphere-jdbc-core-spring-boot-starter</artifactId>
     <version>5.1.1</version>
@@ -489,36 +488,60 @@ public class ShardingMasterAspect {
 
 避免跨库关联, 关联表放到一个库中
 
-### 公共表 (字典表)
+### 广播表 ( 公共表 / 字典表 )
 
 存储固定数据的表,表数据很少发生变化, 查询时经常进行关联
 在每个数据库中创建相同结构的公共表
 
-### 主键生成
+```yaml
+spring:
+  shardingsphere:
+    rules:
+      sharding:
+        tables:
+          value_set_item: # 逻辑表名
+            actual-data-nodes: m$->{[1,2]}.value_set_item
+        broadcast-tables: value_set_item # 指定表为广播表
+```
 
-雪花算法: 不同进程主键不重复, 相同进程主键有序性
+配置完成后, insert/update/delete, 会同时对多个库中的广播表进行查询
 
+TODO: 须注意分布式事务问题
 
-## 分片策略
+### 字段加密
 
+通过sharding-jdbc在插入数据时, 对表中某字段进行加密, 查询时对该字段先加密再查询(常用于user.password).
 
-
-**INLINE - 单一键表达式**
-
-查询时, 可基于分片键==查询, 或in查询
-
-+ 尽量不要用in (id1,id2,id3) , 确保id都在一个分片中, 否则会`全分片表`扫描
-+ 无法使用between查询, 需要单独配置允许范围查询 - 全分片表扫描
-
-**COMPLEX_INLINE - 复杂表达式**
-
-**CLASS_BASE - 自定义复杂逻辑**
-
-定制一个复杂的类实现分片策略
-
-
-
-
+**配置加密策略:**
+```yaml
+spring:
+  shardingsphere:
+    rules:
+      encrypt:
+        tables:
+          user:
+            columns:
+              password:
+                #plainColumn: password_plain # 存储明文的字段
+                cipherColumn: password # 存储密文的字段
+                encryptorName: user_password_encrypt2 # 指定加密策略
+        encryptors:
+          user_password_encrypt1:
+            type: AES
+            props:
+              aes-key-value: 123456
+              digest-algorithm-name: SHA-1
+          user_password_encrypt2:
+            type: MD5
+          user_password_encrypt3:
+            type: SM3
+            props:
+              sm3-salt: 123456
+          user_password_encrypt4:
+            type: RC4
+            props:
+              rc4-key-value: 123456
+```
 
 ----------------------------------------
 

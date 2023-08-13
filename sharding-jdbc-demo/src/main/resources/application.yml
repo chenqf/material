@@ -64,6 +64,8 @@ spring:
               worker:
                 id: 1
         tables:
+          value_set_item:
+            actual-data-nodes: m$->{[1,2]}.value_set_item
           course:
             actual-data-nodes: m$->{[1,2]}.course_$->{0..2}
             database-strategy:
@@ -136,6 +138,27 @@ spring:
           standard:
             sharding-algorithm-name: db_standard_alg
             sharding-column: id
+        broadcast-tables: value_set_item
+      encrypt:
+        tables:
+          user:
+            columns:
+              password:
+#                plainColumn: password_plain # 存储明文的字段
+                cipherColumn: password # 存储密文的字段
+                encryptorName: user_password_encrypt2 # 指定加密策略
+        encryptors:
+#          user_password_encrypt1:
+#            type: AES
+#            props:
+#              aes-key-value: 123456
+#              digest-algorithm-name: SHA-1
+          user_password_encrypt2:
+            type: MD5
+          user_password_encrypt3:
+            type: SM3
+            props:
+              sm3-salt: 123456
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

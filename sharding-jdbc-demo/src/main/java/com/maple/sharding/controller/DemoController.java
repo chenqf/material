@@ -2,16 +2,11 @@ package com.maple.sharding.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.maple.sharding.aop.ShardingMasterOnly;
-import com.maple.sharding.entity.Course;
-import com.maple.sharding.entity.Item;
-import com.maple.sharding.entity.Order;
-import com.maple.sharding.entity.User;
-import com.maple.sharding.mapper.CourseMapper;
-import com.maple.sharding.mapper.ItemMapper;
-import com.maple.sharding.mapper.OrderMapper;
-import com.maple.sharding.mapper.UserMapper;
+import com.maple.sharding.entity.*;
+import com.maple.sharding.mapper.*;
 import lombok.Cleanup;
 import org.apache.shardingsphere.infra.hint.HintManager;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,18 +33,50 @@ public class DemoController {
     @Autowired
     private ItemMapper itemMapper;
 
+    @Autowired
+    private ValueSetItemMapper valueSetItemMapper;
+
+    @GetMapping("/insertValueSetItem/{code}/{name}")
+    public ValueSetItem insertValueSetItem(@PathVariable String code, @PathVariable String name){
+        ValueSetItem item = new ValueSetItem();
+        item.setCode(code);
+        item.setName(name);
+        item.setFkValueSetId(1L);
+        this.valueSetItemMapper.insert(item);
+        return item;
+    }
+
+    @GetMapping("/updateValueSetItem/{id}/{code}/{name}")
+    public ValueSetItem updateValueSetItem(@PathVariable Long id, @PathVariable String code, @PathVariable String name){
+        ValueSetItem item = new ValueSetItem();
+        item.setCode(code);
+        item.setName(name);
+        item.setFkValueSetId(1L);
+        LambdaUpdateWrapper<ValueSetItem> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(ValueSetItem::getId,id);
+        this.valueSetItemMapper.update(item,updateWrapper);
+        return item;
+    }
+
     @GetMapping("/insertUser")
-    public String insertUser(){
+    public User insertUser(){
         User user = new User();
         user.setName("chenqf");
+        user.setPassword("123456");
         this.userMapper.insert(user);
-        return "插入成功";
+        return user;
+    }
+
+    @GetMapping("/getUser/{name}/{password}")
+    public List<User> getUser(@PathVariable String name, @PathVariable String password){
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(User::getName,name).eq(User::getPassword,password);
+        return this.userMapper.selectList(queryWrapper);
     }
 
     @GetMapping("/getUser")
     @ShardingMasterOnly
     public List<User> getUser(){
-        int i = 1/0;
         return this.userMapper.selectList(null);
     }
 
@@ -89,13 +116,13 @@ public class DemoController {
     @GetMapping("/insertCourse")
     public String insertCourse(){
         for (long i = 0; i < 10; i++) {
-            Long id = i+1;
-            Long userId = (long) new Random().nextInt(200);
-            String str = "m" + ((id + userId) % 2 + 1) + ".course_" + ((id + userId) % 3);
+//            Long id = i+1;
+//            Long userId = (long) new Random().nextInt(200);
+//            String str = "m" + ((id + userId) % 2 + 1) + ".course_" + ((id + userId) % 3);
             Course course = new Course();
-            course.setName(str);
-            course.setUserId(userId);
-            course.setId(id);
+            course.setName("course_" + i);
+            course.setUserId((long) new Random().nextInt(200));
+//            course.setId(id);
             this.courseMapper.insert(course);
         }
         return "插入成功";
