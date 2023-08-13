@@ -110,6 +110,8 @@ show slave status; # Slave_IO_Running Yes / Slave_SQL_Running Yes   :代表同�
 
 ### 半同步复制集群
 
+TODO: 什么是半同步复制集群
+
 再原有基础上, 执行一下操作:
 
 ```shell

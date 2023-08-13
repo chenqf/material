@@ -163,3 +163,6 @@ mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   type-aliases-package: com.maple.mp.entity
+  global-config:
+    db-config:
+      id-type: auto
