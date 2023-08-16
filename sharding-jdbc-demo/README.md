@@ -1,10 +1,12 @@
-# Sharding JDBC - 分库分表
+# Sharding JDBC - 客户端分库分表
 
 > 单表行数超过 500 万行或者单表容量超过 2GB，才推荐进行分库分表
 
 > 如果预计三年后的数据量根本达不到这个级别，请不要在创建表时就分库分表
 
-第一要务: 保证数据均匀, 保证单表数据量在一定范围内
+分片策略, 第一要务: 保证数据均匀, 保证单表数据量在一定范围内
+
+
 
 ## 优势
 
@@ -14,20 +16,20 @@
 + 提高系统灵活性
 + 降低系统硬件成本
 
-## 需要考虑的问题
-
-+ 主键生成策略
-+ 数据备份
-+ 数据迁移
-+ 分布式事务
-
-
 ## Mysql服务搭建
 
 + [单机Docker部署](https://github.com/chenqf/material/tree/main/01.Deploy/mysql#%E5%8D%95%E6%9C%BA%E5%AE%89%E8%A3%85)
 + [主从Docker部署](https://github.com/chenqf/material/tree/main/01.Deploy/mysql#%E4%B8%BB%E4%BB%8E%E9%9B%86%E7%BE%A4)
 
 ## ShardingSphere 核心概念
+
+**主要工作:**
+
+1. SQL解析
+2. SQL路由
+3. SQL重写
+
+**主要名词:**
 
 + 虚拟库 : 应用程序只需要像操作单数据源一样访问这个ShardingSphereDatasource即可
 + 真实库 : 实际保存数据的数据库
@@ -105,6 +107,46 @@ spring:
 
 须避免时间回溯, 保证主键不重复
 
+#### 主要分布式主键生成策略
+
+1. 数据库策略
+
+比如Mysql自增主键, 每个分片表起始id不同, 步长为分片表的数量
+
+比如存在4个分片表, 0+4 / 1+4 / 2+4 / 3+4
+
+`不利于扩展`
+
+2. 应用单独生成
+
+每个应用自己生成, 比如 UUID / SnowFlake(事实上的标准)
+
+算法不能太复杂, 太复杂会消耗应用程序的计算资源和内存空间
+
+分布式场景下, 若服务时间不同步可能导致雪花算法生成的ID重复
+
+`雪花算法可能导致分片不均匀`
+
+3. 第三方服务统一生成
+
++ Redis使用incr指令, 生成严格递增的数字序列
++ Zookeeper创建序列化节点, 获取严格递增的数字序列
+
+`每次生成ID都需要申请, 导致第三方服务压力过大`
+
+4. 与第三方服务结合的segment策略
+
+依然从第三方服务获取ID, 但每次不是获取一个ID, 而是每次获取一段ID, 然后进行本地分发
+
+优化方案:
+
++ 本地存在2个buffer
++ buffer1中申请的ID端使用达到一定百分比后
++ 再次申请一段ID存入buffer2
++ 当buffer1中ID用完, 直接使用buffer2
+
+`第三方服务挂掉, 导致整个服务不可用` , `若本地服务宕机后重启导致ID不连续`
+
 #### 使用默认雪花算法
 
 ```yaml
@@ -125,9 +167,58 @@ spring:
           key-generator-name: my_id_for_snowflake_alg
 ```
 
+**雪花算法生成的ID会导致分片不均匀**
+
 #### 自定义雪花算法
 
-TOOD
+通过SPI机制进行扩展
+
+**：自行实现一个算法类，实现KeyGenerateAlgorithm接口:**
+
+```java
+public class MyKeyGeneratorAlgorithm implements KeyGenerateAlgorithm {
+    private AtomicLong atom = new AtomicLong(0);
+    private Properties props;
+    
+    @Override
+    public Comparable<?> generateKey() {
+        LocalDateTime ldt = LocalDateTime.now();
+        String timestampS = DateTimeFormatter.ofPattern("HHmmssSSS").format(ldt);
+        return Long.parseLong(""+timestampS+atom.incrementAndGet());
+    }
+    
+    @Override
+    public Properties getProps() {
+        return this.props;
+    }
+    
+    public String getType() {
+        return "MY_KEY";
+    }
+    
+    @Override
+    public void init(Properties props) {
+        this.props = props;
+    }
+}
+```
+
+在classpath/META-INF/services目录下( 这个目录是Java的SPI机制加载的固定目录 )创建一个SPI的扩展文件，文件名就是接口的全类名
+
+org.apache.shardingsphere.sharding.spi.KeyGenerateAlgorithm 中添加:
+
+com.xx.xxx.xxx.MyKeyGeneratorAlgorithm
+
+**修改配置使用自定义的主键生成策略:**
+
+```yaml
+spring:
+  shardingsphere:
+    rules:
+      sharding:
+        key-generators:
+          <key-generate-name>: MY_KEY
+```
 
 ### 分片实现
 
@@ -521,8 +612,6 @@ spring:
 
 配置完成后, insert/update/delete, 会同时对多个库中的广播表进行查询
 
-TODO: 须注意分布式事务问题
-
 ### 字段加密
 
 通过sharding-jdbc在插入数据时, 对表中某字段进行加密, 查询时对该字段先加密再查询(常用于user.password).
@@ -560,17 +649,9 @@ spring:
 
 ----------------------------------------
 
-每写一个sql都要考虑sql是怎么执行的
+内存限制模式, 连接限制模式
 
-避免虚拟列查询, 会导致全分片查询
-
-第一要务, 表数据分配均匀
-
-时间分片,数据峰值不固定
-
-
-
-
+code palen
 
 
 海量数据场景下, 不要使用存储过程
@@ -585,3 +666,16 @@ mp 字段名尽量不要用id, 用了id, 默认吧id作为主键, 默认生成�
 
 
 distinct查询
+
+## 分布式事务
+
+### XA
+
+### Seat
+
+## 数据迁移
+
+1. 定时任务迁移老数据
+2. 数据双写, 新数据新老双写
+3. 老数据迁移完成, 去掉数据双写
+4. 确保应用层无修改

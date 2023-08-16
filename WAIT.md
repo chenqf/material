@@ -25,3 +25,8 @@
   + 基因算法
 + application配置文件引入
 + 加密算法
++ SQL解析
+  + antlr4
++ SPI机制
++ 数据双写方案
++ mysql和redis数据一致性
