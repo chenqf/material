@@ -4,25 +4,18 @@
 > 
 > 金融场景下不要使用Kafka, 建议使用 RocketMq
 
-## JMS概念
+> Kafka在企业级应用中被广泛应用，包括实时流处理、日志聚合、监控和数据分析等方面。同时，Kafka还可以与其他大数据工具集成，如Hadoop、Spark和Storm等，构建一个完整的数据处理生态系统。
 
-P2P消息传输模型: 
+## 典型应用场景
 
-+ 一个消息只有一个消费者, 一旦被消费, 就从队列中移除
-+ 发送者和接受者在时间上没有依赖性
-+ 接受者在成功收到消息后, 需要发送确认通知(ack)
+一个典型的日志聚合的应用场景:
 
+![image-20230816152614944](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230816152614944.png)
 
-Pub/Sub模型:
-
-+ 每个消息可以有多个消费者
-+ 发布者和订阅者之间有时间上的依赖性
-+ 收到消息后队列不会删除该消息
-
-接收消息方式:
-
-+ 同步: 消费者调用receive()方法, receive()方法中, 消息未到达之前会阻塞
-+ 异步: 消费者注册一个监听者, 只要消息到达, 监听者的onMessage()方法会被调用
++ `数据吞吐量很大`:  可手机海量日志
++ `集群容错性高`: 允许集群中少量节点崩溃
++ `功能不是太复杂`: 未支持死信队列/顺序消息等 `(特殊处理)`
++ `允许少量数据丢失`: Kafka本身也在不端优化数据安全问题, 目前基本可以认为`不会丢消息`
 
 ## 设计目标
 
@@ -39,16 +32,59 @@ Pub/Sub模型:
 + 运营指标
 + 流式处理
 
+## 简单收发消息
+
+![image-20230816153616472](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230816153616472.png)
+
+```shell
+# 查看所有topic
+kafka-topics.sh --list  --bootstrap-server kafka-standalone:9092
+# 创建topic
+kafka-topics.sh --create --topic test --bootstrap-server kafka-standalone:9092
+```
+
+```shell
+# 作为Producer
+kafka-console-producer.sh --bootstrap-server kafka-standalone:9092 --topic test
+
+# 作为Consumer - 只能接收监听后生产的消息 - 每个消费者都会收到消息
+kafka-console-consumer.sh --bootstrap-server kafka-standalone:9092 --topic test
+# 作为Consumer - 从头接收消息
+kafka-console-consumer.sh --bootstrap-server kafka-standalone:9092 --from-beginning --topic test
+# 作为Consumer - 从0分区中的第N个位置获取消息
+kafka-console-consumer.sh --bootstrap-server kafka-standalone:9092 --partition 0 --offset 4 --topic test
+# 作为Consumer - 分组消息, 每组中只有一个消费者能收到消息
+kafka-console-consumer.sh --bootstrap-server kafka-standalone:9092 --topic test --consumer-property group.id=testGroup
+
+# 查看消费者组的情况
+kafka-consumer-groups.sh --bootstrap-server kafka-standalone:9092 --describe --group testGroup
+```
+
++ 每个单独消费者和每个消费组都会收到消息
++ 分组消费, 组中只有一个消费者会收到消息
++ 每个消费者组有自己的消费进度, 多个partition,每个partition记录多个记录
+
+> 不同消费组处理不同业务 , 每个消费组用于负载均衡
+
 ## 核心概念
 
 + Broker: Kafka节点, 多个Broker组成一个集群, 每个Broker可以有多个Topic
 + Producer: 生产message发送到topic
 + Consumer: 订阅topic消费message, consumer作为一个线程来消费
-+ Consumer Group: 一个Consumer Group包含多个Consumer, 预先在配置文件中配置好的
-+ Topic(逻辑概念): 一种类别, 每条消息都有一个类别, 不同消息分开存储, 每个topic可以认为是一个队列
++ Consumer Group: 一个Consumer Group包含多个Consumer
++ Topic(逻辑概念): 一种类别, 每条消息都有一个类别, 不同消息分开存储
 + Partition: topic物理上的分组, 一个topic可以分为多个partition, 每个partition是一个有序的队列
 + Replicas: 每一个分区, 会有N个副本
 + Segment: partition无力上由多个segment组成, 每个Segment存着message消息
+
+![image-20230816160252884](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230816160252884.png)
+
+
+## 集群
+
+![image-20230816160841214](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230816160841214.png)
+
+### 分组消息
 
 
 

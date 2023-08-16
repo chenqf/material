@@ -47,7 +47,7 @@ docker login --username=chenqf881006 registry.cn-hangzhou.aliyuncs.com # cqf1300
 docker pull registry.cn-hangzhou.aliyuncs.com/<namespace>/<registry>:[镜像版本号]
 ```
 
-#### 私有库
+#### 私有库 TODO harbor
 
 创建私有库:
 
