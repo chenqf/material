@@ -41,6 +41,18 @@ spring:
     virtual-host: /
 ```
 
+## Exchange - 路由
+
+Exchange绑定Queue时会指定RoutingKey, 一个Exchange可以绑定多个Queue, 也可以将消息转发给其他Exchange
+
+生产者发送消费给Exchange, 根据Exchange类型和发送的RoutingKey, Exchange将消息转发给不同的队列
+
+Exchange分类:
+
++ direct : 消费者发送的RoutingKey和BindingKey完全相同, 才会把消息转发到对应的对
++ fanout : Exchange会把消息广播到已绑定的所有Queue
++ topic  : 消费者发送的RoutingKey满足BindingKey就可以将消息发送到Queue中
+
 ## 队列
 
 + Classic - 高可用结合镜像模式 (3.8前推荐使用)
@@ -463,6 +475,46 @@ public class BookService {
       System.out.println(book);
     }
   }
+}
+```
+
+### 临时队列
+
+RabbitMq中队列的消息, 被消费一次就会被删除
+
+但实际业务中, 可能存在集群环境下每个客户端节点都都要消费该消息的情况, 且集群节点数不确定
+
+比如多级缓存架构中, 某个节点进程内缓存更新, 需要通知其他所有节点更新进程内缓存
+
+使用临时队列处理, 只有客户端存在时, 临时节点存在, 客户端断开连接, 临时队列自动删除
+
+```java
+@Configuration
+public class AmqpConfig {
+    @Autowired
+    private AmqpAdmin amqpAdmin;
+    @Bean
+    public Queue tempQueue(){
+      // 创建一个临时队列
+      Queue queue = new AnonymousQueue();
+      FanoutExchange exchange = new FanoutExchange("process-cache-exchange");
+      Binding binding = BindingBuilder.bind(queue).to(exchange);
+      amqpAdmin.declareQueue(queue);
+      amqpAdmin.declareExchange(exchange);
+      amqpAdmin.declareBinding(binding);
+      return queue;
+    }
+}
+```
+
+```java
+@Service
+public class CacheService {
+    @RabbitListener(queues = "#{tempQueue.name}")
+    public void listenToTemporaryQueue(String message) {
+        // 处理接收到的消息
+        System.out.println("Received message from temporary queue: " + message);
+    }
 }
 ```
 

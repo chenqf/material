@@ -47,6 +47,62 @@ docker login --username=chenqf881006 registry.cn-hangzhou.aliyuncs.com # cqf1300
 docker pull registry.cn-hangzhou.aliyuncs.com/<namespace>/<registry>:[镜像版本号]
 ```
 
+### DockFile
+
+1. 编写Dockerfile文件
+2. docker build 构建镜像
+3. docker run 运行容器
+
++ FROM : 基于哪个镜像, 一般都是第一条
++ RUN  : 容器构建时需要运行的命令
+  + RUN <命令行命令> 
+  + RUN ["<可执行文件>", "<ARG1>","<ARG2>"]
++ EXPOSE : 当前容器暴露的接口
++ WORKDIR : 指定创建容器后, 终端登陆进入的工作目录
++ USER : 指定该镜像以什么用户去执行, 默认是root
++ ENV : 设置环境变量
+  + ENV MY_VAL=test
++ ADD : 将主机目录下的文件COPY到镜像中, 且会自动处理URL和解压tar压缩包
++ COPY
++ VOLUME : 容器卷
++ CMD : 指定容器启动后要做的事
+  + 可以有多个, 但只有最后一个CMD生效
+  + 若docker run后跟其他参数, 最后一个CMD会被覆盖
++ ENTRYPOINT: 可以和CMD一起使用, 这里CMD等于在给ENTRYPOINT传参
+
+**示例:**
+
+```dockerfile
+FROM ubuntu:23.10
+MAINTAINER chenqifeng<546710115@qq.com>
+
+RUN apt-get update
+RUN apt-get -y install wget
+RUN wget https://repo.huaweicloud.com/java/jdk/8u202-b08/jdk-8u202-linux-x64.tar.gz
+RUN mkdir /usr/local/java/
+RUN tar -zxvf jdk-8u202-linux-x64.tar.gz -C /usr/local/java
+RUN rm jdk-8u202-linux-x64.tar.gz
+
+ENV JAVA_HOME /usr/local/java/jdk1.8.0_202
+ENV JRE_HOME $JAVA_HOME/jre
+ENV CLASSPATH $JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar:$JRE_HOME/lib:$CLASSPATH
+ENV PATH $JAVA_HOME/bin:$PATH
+```
+
+**基于Dockerfile构建镜像:**
+
+```shell
+# 须指定Dockerfile文件所在文件夹
+docker build -t java8env:0.1 <Dockerfile-Dir>
+```
+
+```dockerfile
+FROM java8env:0.1
+ADD kafka-demo-0.0.1-SNAPSHOT.jar chenqf.jar
+ENTRYPOINT ["java","-jar","/chenqf.jar"]
+EXPOSE 8015
+```
+
 #### 私有库 TODO harbor
 
 创建私有库:
@@ -93,7 +149,7 @@ docker push 127.0.0.1:5000/<namespace>/<registry>:<version>
 
 #### 虚悬镜像
 
-仓库名和标签都是None, 实际没有用, 可以删掉
+构建镜像时出现错误, 仓库名和标签都是None, 实际没有用还占用空间, 需要删掉
 
 ## 容器
 
@@ -104,6 +160,7 @@ docker push 127.0.0.1:5000/<namespace>/<registry>:<version>
 + -it 启动交互式容器
 + -P 随机端口映射
 + -p 指定端口映射 -p[主机端口]:[容器端口]
++ -v 指定数据卷 
 + --privileged 扩大容器的权限, 使用挂载卷一定要使用
 
 ```shell

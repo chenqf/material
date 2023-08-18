@@ -24,6 +24,19 @@ public class AmqpConfig {
         return new Jackson2JsonMessageConverter();
     }
 
+    @Bean
+    public Queue tempQueue(){
+        // 创建一个临时队列
+        Queue queue = new AnonymousQueue();
+        FanoutExchange exchange = new FanoutExchange("process-cache-exchange");
+        Binding binding = BindingBuilder.bind(queue).to(exchange);
+        amqpAdmin.declareQueue(queue);
+        amqpAdmin.declareExchange(exchange);
+        amqpAdmin.declareBinding(binding);
+        return queue;
+    }
+
+
     /**
      * 声明 classic 队列
      */

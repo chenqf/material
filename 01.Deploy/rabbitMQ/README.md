@@ -36,7 +36,7 @@ export DOCKER_NAME=rabbitmq
 export DOCKER_MASTER_NAME=${DOCKER_NAME}1
 export RABBIT_NET_NAME=rabbit-net
 export DATA_DIR=/docker/rabbit/cluster
-export P1=15672
+export P1=15672 # 15672 : 管理界面端口 / 5672 : 客户端连接端口
 export MIRROR_VHOST=/ # /mirror
 rm -rf ${DATA_DIR}/master
 mkdir -p ${DATA_DIR}/master
@@ -127,14 +127,9 @@ echo "listen monitor
 
 docker run -d --name haproxy --network ${RABBIT_NET_NAME} -p5672:5672 -p8100:8100 -v /docker/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg haproxy:2.8.1
 #  docker exec -it -u 0 haproxy bash
+# HA 查看地址: http://127.0.0.1:8100/rabbit
 # TODO Keepalived
 ```
-
-docker exec -it rabbitmq1 rabbitmq-plugins enable rabbitmq_federation
-docker exec -it rabbitmq2 rabbitmq-plugins enable rabbitmq_federation
-
-docker exec -it rabbitmq2 rabbitmq-plugins enable rabbitmq_federation_management
-docker exec -it rabbitmq3 rabbitmq-plugins enable rabbitmq_federation_management
 
 
 
