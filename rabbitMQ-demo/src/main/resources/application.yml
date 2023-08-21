@@ -18,7 +18,7 @@ spring:
           max-interval: 50000    # 重试最大间隔时间
           initial-interval: 1000 # 重试间隔（单位：毫秒）
           multiplier: 2          # 间隔时间乘子，间隔时间*乘子=下一次的间隔时间，最大不能超过设置的最大间隔时间
-        prefetch: 5 #指定一个请求能处理多少消息
-        concurrency: 5 # 消费者数量
+        prefetch: 8 # 指定一个监听器的一个监听线程预获取的消息数量
+        concurrency: 4 # 指定一个监听器默认有几个线程进行消费
     publisher-confirm-type: correlated # 确认消息已发送到Exchange
     publisher-returns: true # 确认消息已发送到Queue

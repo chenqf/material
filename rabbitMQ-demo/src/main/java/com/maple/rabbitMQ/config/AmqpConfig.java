@@ -1,12 +1,18 @@
 package com.maple.rabbitMQ.config;
 
 import org.springframework.amqp.core.*;
+import org.springframework.amqp.rabbit.batch.BatchingStrategy;
+import org.springframework.amqp.rabbit.batch.SimpleBatchingStrategy;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.BatchingRabbitTemplate;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
 
 import java.util.HashMap;
 
@@ -24,30 +30,16 @@ public class AmqpConfig {
         return new Jackson2JsonMessageConverter();
     }
 
-    @Bean
-    public Queue tempQueue(){
-        // 创建一个临时队列
-        Queue queue = new AnonymousQueue();
-        FanoutExchange exchange = new FanoutExchange("process-cache-exchange");
-        Binding binding = BindingBuilder.bind(queue).to(exchange);
-        amqpAdmin.declareQueue(queue);
-        amqpAdmin.declareExchange(exchange);
-        amqpAdmin.declareBinding(binding);
-        return queue;
-    }
-
 
     /**
      * 声明 classic 队列
      */
-    @Bean
     public Queue queue_demo() {
         Queue queue = new Queue("queue-demo1",true,false,false);
         amqpAdmin.declareQueue(queue);
         return queue;
     }
 
-    @Bean
     public Queue singleActiveQueue() {
         HashMap<String, Object> map = new HashMap<>();
         map.put("x-single-active-consumer",true); // 单活模式
@@ -60,7 +52,6 @@ public class AmqpConfig {
     /**
      * 声明 classic 队列
      */
-    @Bean
     public Queue classicQueue() {
         HashMap<String, Object> map = new HashMap<>();
         map.put("x-dead-letter-exchange","dead-letter-exchange"); // 指定死信队列的exchange
@@ -73,7 +64,6 @@ public class AmqpConfig {
     /**
      * 声明延时队列 ,声明过期时间, 声明对应的死信队列
      */
-    @Bean
     public Queue delayQueue() {
         HashMap<String, Object> map = new HashMap<>();
         map.put("x-dead-letter-exchange","dead-letter-exchange"); // 指定死信队列的exchange
@@ -87,7 +77,6 @@ public class AmqpConfig {
     /**
      * 声明 quorum 队列并指定对应的死信队列
      */
-    @Bean
     public Queue quorumQueue() {
         HashMap<String, Object> map = new HashMap<>();
         map.put("x-queue-type","quorum"); // 指定为 quorum 类型的队列
@@ -102,7 +91,6 @@ public class AmqpConfig {
     /**
      * 声明用作死信的 quorum 队列
      */
-    @Bean
     public Queue deadLetterQuorumQueue() {
         HashMap<String, Object> map = new HashMap<>();
         map.put("x-queue-type","quorum"); // 指定为 quorum 类型的队列
@@ -110,21 +98,17 @@ public class AmqpConfig {
         amqpAdmin.declareQueue(queue);
         return queue;
     }
-
-    @Bean
     public DirectExchange demo_exchange() {
         DirectExchange exchange = new DirectExchange("exchange-demo1",true,false);
         amqpAdmin.declareExchange(exchange);
         return exchange;
     }
 
-    @Bean
     public DirectExchange demoExchange() {
         DirectExchange exchange = new DirectExchange("exchange-demo",true,false);
         amqpAdmin.declareExchange(exchange);
         return exchange;
     }
-    @Bean
     public DirectExchange demoExchange1() {
         DirectExchange exchange = new DirectExchange("classic-exchange-demo",true,false);
         amqpAdmin.declareExchange(exchange);
@@ -134,7 +118,6 @@ public class AmqpConfig {
     /**
      * 声明用作死信的 exchange
      */
-    @Bean
     public DirectExchange deadLetterExchange() {
         DirectExchange exchange = new DirectExchange("dead-letter-exchange",true,false);
         amqpAdmin.declareExchange(exchange);
@@ -148,7 +131,17 @@ public class AmqpConfig {
 //        return exchange;
 //    }
 
-
+    @Bean
+    public Queue tempQueue(){
+        // 创建一个临时队列
+        Queue queue = new AnonymousQueue();
+        FanoutExchange exchange = new FanoutExchange("process-cache-exchange");
+        Binding binding = BindingBuilder.bind(queue).to(exchange);
+        amqpAdmin.declareQueue(queue);
+        amqpAdmin.declareExchange(exchange);
+        amqpAdmin.declareBinding(binding);
+        return queue;
+    }
     @Bean
     public Binding binding1() {
         return BindingBuilder.bind(quorumQueue()).to(demoExchange()).with("demo");
@@ -180,6 +173,15 @@ public class AmqpConfig {
     @Bean
     public Binding binding7() {
         return BindingBuilder.bind(queue_demo()).to(demo_exchange()).with("demo");
+    }
+
+    @Bean
+    public Binding binding8() {
+        Queue queue = new Queue("batch-queue",true,false,false);
+        amqpAdmin.declareQueue(queue);
+        DirectExchange exchange = new DirectExchange("batch-exchange",true,false);
+        amqpAdmin.declareExchange(exchange);
+        return BindingBuilder.bind(queue).to(exchange).with("demo");
     }
 
 }

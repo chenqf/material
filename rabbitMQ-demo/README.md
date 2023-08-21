@@ -178,6 +178,7 @@ public class AmqpConfig {
 惰性队列会尽可能早的将消息内容保存到硬盘当中，并且只有在用户请求到时，才临时从硬盘加载到RAM内存当中。
 
 ```java
+
 @Configuration
 public class AmqpConfig {
     @Autowired
@@ -326,12 +327,15 @@ public class RabbitConfig {
     }
 }
 ```
+
 ```java
+
 @RestController
 @RequestMapping("/send")
 public class MqSentController {
     @Autowired
     private MessageSender messageSender;
+
     @RequestMapping("/demo")
     public String direct1() {
         this.messageSender.rabbitConvertAndSend("exchange-demo", "demo", new Book(1, "chenqf", "haha"));
@@ -345,7 +349,7 @@ public class MqSentController {
 RabbitMq 提供2中方式确认消息(auto / manual)
 
 > 自动确认模式下，消息发送后立即认为已成功发送。这种模式以更高的吞吐量（只要消费者能够跟上）为代价，以降低交付和消费者处理的安全性。
-> 
+>
 > 使用手动确认时，当发生传递的通道（或连接）关闭时，任何未确认的传递（消息）都会自动重新排队。这包括客户端的 TCP 连接丢失、消费者应用程序（进程）故障和通道级协议异常
 
 经测验, 使用原生rabbit客户端sdk验证自动模式, 存在大量消息被客户端获取, 再未处理完成时服务停止, 导致剩余消息未消费就丢失的情况
@@ -378,18 +382,19 @@ public class Demo {
 
 springBoot2.6.13中, 验证使用spring-rabbit中`@RabbitListener`的方式消息消息并指定自动应答模式, 并未出现以上问题
 
-验证结果: 
+验证结果:
 
 + 大量消息积压时,部分消息被spring客户端拉去,消息状态变为`Unacked`,消息未完全处理时服务停止, 剩余消息重新入队
 + 单一消息被消费时, 业务代码出现异常, 当前消息重新入队
 
 ```java
+
 @Service
 public class BookService {
-  @RabbitListener(queues = "classic-demo",ackMode = "AUTO")
-  public void receiveAck1(String msg,Message message,Channel channel) throws Exception {
-    throw new Exception("一个异常");
-  }
+    @RabbitListener(queues = "classic-demo", ackMode = "AUTO")
+    public void receiveAck1(String msg, Message message, Channel channel) throws Exception {
+        throw new Exception("一个异常");
+    }
 }
 ```
 
@@ -411,45 +416,174 @@ spring:
 手动ACK实现:
 
 ```java
+
 @Service
 public class BookService {
-  @RabbitListener(queues = "quorum-demo",ackMode = "MANUAL")
-  @RabbitHandler
-  public void receiveAck2(Book book,Message message,Channel channel) {
-    // 当前第几次接收到该消息 deliveryCount 从0开始
-    Object o = message.getMessageProperties().getHeaders().get("x-delivery-count");
-    long deliveryCount = o == null ? 0 : (long) o;
-    System.out.println("第" + deliveryCount + "次收到消息:" + book);
-    if(deliveryCount >= 5){
-      // 拒绝, 丢弃消息进入死信队列
+    @RabbitListener(queues = "quorum-demo", ackMode = "MANUAL")
+    @RabbitHandler
+    public void receiveAck2(Book book, Message message, Channel channel) {
+        // 当前第几次接收到该消息 deliveryCount 从0开始
+        Object o = message.getMessageProperties().getHeaders().get("x-delivery-count");
+        long deliveryCount = o == null ? 0 : (long) o;
+        System.out.println("第" + deliveryCount + "次收到消息:" + book);
+        if (deliveryCount >= 5) {
+            // 拒绝, 丢弃消息进入死信队列
 //            channel.basicNack(message.getMessageProperties().getDeliveryTag(), false,false);
-      // 应答, 消息消费成功
-      channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
-    }else{
-      // 拒绝, 并重新入队
-      channel.basicNack(message.getMessageProperties().getDeliveryTag(), false,true);
+            // 应答, 消息消费成功
+            channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
+        } else {
+            // 拒绝, 并重新入队
+            channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, true);
+        }
     }
-  }
 }
 ```
 
 ## Other
+
+### 多线程消费
+
+程序默认开启一条线程对queues进行监听, 可配置concurrency指定当前进程下开启几条线程对queues进行监听
+
+```java
+
+@Service
+public class BookService {
+    @RabbitListener(queues = "queue-demo1", concurrency = "3")
+    public void receive(Book book, Channel channel) throws Exception {
+        System.out.println("---------------------------");
+        System.out.println("消费:" + book + "-thread:" + Thread.currentThread().getId());
+        System.out.println("---------------------------");
+    }
+}
+```
+
+### 批量消费
+
+@RabbitListener中的containerFactory, 配置消息监听容器工程, 配置一次处理多条消息, 提高消费速度
+
+**配置批量消费Bean:**
+
+```java
+
+@Configuration
+public class BatchConfig {
+    @Autowired
+    ConnectionFactory connectionFactory;
+    @Autowired
+    SimpleRabbitListenerContainerFactoryConfigurer configurer;
+
+    @Bean
+    public SimpleRabbitListenerContainerFactory consumerBatchContainerFactory() {
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        configurer.configure(factory, connectionFactory);
+        // 配置消费者的监听器是批量消费消息的类型
+        factory.setBatchListener(true);
+        // 一批几个
+        factory.setBatchSize(5);
+        // 等待时间 毫秒 , 这里其实是单个消息的等待时间 指的是单个消息的等待时间
+        // 也就是说极端情况下，你会等待 BatchSize * ReceiveTimeout 的时间才会收到消息
+        factory.setReceiveTimeout(3 * 1000L);
+        factory.setConsumerBatchEnabled(true);
+        return factory;
+    }
+}
+```
+
+**指定批量消费:**
+
+```java
+
+@Service
+public class BookService {
+    @RabbitListener(queues = "classic-demo", concurrency = "1", containerFactory = "consumerBatchContainerFactory")
+    public void receive(List<Book> books, List<Message> messages, Channel channel) throws Exception {
+        System.out.println(books.size() + ":thread-id: " + Thread.currentThread().getId());
+        for (Book book : books) {
+            System.out.println(book);
+        }
+    }
+}
+```
+
+### 批量发送
+
+批量发送消息，可以提高MQ发送性能, 达到以下限制则批量发送消息:
+
++ batchSize ：超过收集的消息数量的最大条数。
++ bufferLimit ：超过收集的消息占用的最大内存。
++ timeout ：超过收集的时间的最大等待时长，单位：毫秒。
+    + 是以最后一次发送时间为起点。也就说，每调用一次发送消息，都以当前时刻开始计时
+
+```java
+
+@Configuration
+public class BatchConfig {
+    @Autowired
+    ConnectionFactory connectionFactory;
+
+    @Autowired
+    SimpleRabbitListenerContainerFactoryConfigurer configurer;
+
+    @Bean
+    public BatchingRabbitTemplate batchRabbitTemplate(ConnectionFactory connectionFactory, ObjectMapper objectMapper) {
+
+        int batchSize = 10;
+        // 每次批量发送消息的最大内存 b
+        int bufferLimit = 1024 * 1024;
+        // 超过收集的时间的最大等待时长，单位：毫秒
+        int timeout = 5 * 1000;
+        BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(batchSize, bufferLimit, timeout);
+        // 创建 TaskScheduler 对象，用于实现超时发送的定时器
+        TaskScheduler taskScheduler = new ConcurrentTaskScheduler();
+        // 创建 BatchingRabbitTemplate 对象
+        BatchingRabbitTemplate batchTemplate = new BatchingRabbitTemplate(batchingStrategy, taskScheduler);
+        // 指定json序列化
+        batchTemplate.setMessageConverter(new Jackson2JsonMessageConverter(objectMapper));
+        batchTemplate.setConnectionFactory(connectionFactory);
+        return batchTemplate;
+    }
+}
+```
+
+```java
+
+@RestController
+@RequestMapping("/send")
+public class MqSentController {
+
+    @Autowired
+    private BatchingRabbitTemplate batchingRabbitTemplate;
+
+    @RequestMapping("/batch/demo")
+    public String batch() {
+        for (int i = 0; i < 20; i++) {
+            this.batchingRabbitTemplate.convertAndSend("batch-exchange", "demo", new Book(1, "chenqf", "haha" + i));
+        }
+        return "success";
+    }
+}
+```
+
+虽然多条消息一次性发送, 但在rabbit后台看到的仅为单条消息, 在消息体的header中amqp_batchSize字段标识当前批量了几条消息
 
 ### 有序消费 - 单活模式
 
 **单活模式**
 
 ```java
+
 @Configuration
 public class AmqpConfig {
     @Autowired
     private AmqpAdmin amqpAdmin;
+
     @Bean
     public Queue singleActiveQueue() {
         HashMap<String, Object> map = new HashMap<>();
-        map.put("x-single-active-consumer",true); // 单活模式队列
-        map.put("x-queue-type","quorum"); // 指定为 quorum 类型的队列
-        Queue queue = new Queue("single-active-demo",true,false,false,map);
+        map.put("x-single-active-consumer", true); // 单活模式队列
+        map.put("x-queue-type", "quorum"); // 指定为 quorum 类型的队列
+        Queue queue = new Queue("single-active-demo", true, false, false, map);
         amqpAdmin.declareQueue(queue);
         return queue;
     }
@@ -460,23 +594,9 @@ public class AmqpConfig {
 
 一个队列只有一个消费者 , 缺点: 无法并发消费消息, 并发能力大大下降
 
+无论是集群下多个进程下的线程监听, 还是一个进程下的多个线程进行监听, 只有有一个线程的监听器是Active状态
+
 实际业务中, 更可能的情况是同业务实体的消息需要有序的, 可根据业务实体的`id进行取模`, 根据结果拆分`多个单活队列`, 提高并发能力
-
-### 批量消费
-
-默认每次消费一条消息, 对于某些业务场景, 效率较低, 可通过@RabbitListener中的concurrency参数设定批量消费
-
-```java
-@Service
-public class BookService {
-  @RabbitListener(queues = "classic-demo",concurrency = "5")
-  public void receive(List<Book> books,List<Message> messages, Channel channel) throws Exception {
-    for (Book book : books) {
-      System.out.println(book);
-    }
-  }
-}
-```
 
 ### 临时队列
 
@@ -489,25 +609,28 @@ RabbitMq中队列的消息, 被消费一次就会被删除
 使用临时队列处理, 只有客户端存在时, 临时节点存在, 客户端断开连接, 临时队列自动删除
 
 ```java
+
 @Configuration
 public class AmqpConfig {
     @Autowired
     private AmqpAdmin amqpAdmin;
+
     @Bean
-    public Queue tempQueue(){
-      // 创建一个临时队列
-      Queue queue = new AnonymousQueue();
-      FanoutExchange exchange = new FanoutExchange("process-cache-exchange");
-      Binding binding = BindingBuilder.bind(queue).to(exchange);
-      amqpAdmin.declareQueue(queue);
-      amqpAdmin.declareExchange(exchange);
-      amqpAdmin.declareBinding(binding);
-      return queue;
+    public Queue tempQueue() {
+        // 创建一个临时队列
+        Queue queue = new AnonymousQueue();
+        FanoutExchange exchange = new FanoutExchange("process-cache-exchange");
+        Binding binding = BindingBuilder.bind(queue).to(exchange);
+        amqpAdmin.declareQueue(queue);
+        amqpAdmin.declareExchange(exchange);
+        amqpAdmin.declareBinding(binding);
+        return queue;
     }
 }
 ```
 
 ```java
+
 @Service
 public class CacheService {
     @RabbitListener(queues = "#{tempQueue.name}")
@@ -527,7 +650,6 @@ public class CacheService {
 
 消费前,使用分布式锁, 避免并发时时出现重复消费
 
-
 ### 分布式事务
 
 > 最终一致性, 可接受暂时不一致
@@ -538,7 +660,7 @@ public class CacheService {
 
 `补单机制` : 投递消息时分发为两个队列, 一个作为真是Consumer的消费队列, 另一个作为校验是否Producer事务执行成功, 做失败进行补单
 
-TODO 
+TODO
 
 ### 联邦插件
 
@@ -568,7 +690,6 @@ Downstream中配置接收Upstream消息的Policy:
 
 对于寄存的消息, 无法同步
 
-
 ## TODO
 
-消息重放 ?
+事务消息

@@ -6,6 +6,7 @@ import com.rabbitmq.client.Channel;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
+import org.springframework.amqp.rabbit.core.BatchingRabbitTemplate;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,6 +28,17 @@ public class MqSentController {
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
+
+    @Autowired
+    private BatchingRabbitTemplate batchingRabbitTemplate;
+
+    @RequestMapping("/batch/demo")
+    public String batch() {
+        for (int i = 0; i < 20; i++) {
+            this.batchingRabbitTemplate.convertAndSend("batch-exchange", "demo", new Book(1, "chenqf", "haha" + i));
+        }
+        return "1111";
+    }
 
     @RequestMapping("/demo")
     public String direct() {
