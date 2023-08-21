@@ -6,6 +6,8 @@
 
 > Kafka在企业级应用中被广泛应用，包括实时流处理、日志聚合、监控和数据分析等方面。同时，Kafka还可以与其他大数据工具集成，如Hadoop、Spark和Storm等，构建一个完整的数据处理生态系统。
 
+高可用性, 可能会有丢失数据的可能性, 功能比较单一, 适合日志分析, 大数据采集
+
 ## 典型应用场景
 
 一个典型的日志聚合的应用场景:
@@ -87,7 +89,6 @@ kafka-consumer-groups.sh --bootstrap-server kafka-standalone:9092 --describe --g
 
 ![image-20230816160252884](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230816160252884.png)
 
-
 ## 集群
 
 ![image-20230816160841214](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230816160841214.png)
@@ -100,6 +101,10 @@ kafka-consumer-groups.sh --bootstrap-server kafka-standalone:9092 --describe --g
 4. Producer将消息发送到对应的Partition上，然后Consumer通过Partition上的Offset偏移量，记录自 己所属消费者组Group在当前Partition上消费消息的进度
 5. Producer发送给一个Topic的消息，会由Kafka推送给所有订阅了这个Topic的消费者组进行处理。但是 在每个消费者组内部，只会有一个消费者实例处理这一条消息。
 6. Kafka的Broker通过Zookeeper组成集群。然后在这些Broker中，需要选举产生一个担任 Controller角色的Broker
+
+## 服务端设计
+
+
 
 ## 官方客户端使用
 
@@ -466,6 +471,13 @@ void abortTransaction() throws ProducerFencedException;
 2. 客户端单线程消费对应的Partition
 
 ## 优化
+
+1. 顺序消费下, 因网络不稳定导致某个消息消费失败, 后续消息消费依赖前一条消息的业务执行, 导致所有消息失败
+
+增加重试机制, 超过重试次数后, 将消息加入到重试表中, 之后消息判断重试表中是否有业务ID相关的重新信息, 无则继续执行, 有则加入重试表
+
+TODO elastic-job建立失败重试机制
+
 
 ## TODO 
 

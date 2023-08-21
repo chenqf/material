@@ -1,0 +1,5 @@
+server:
+  port: 8017
+spring:
+  application:
+    name: ES-demo

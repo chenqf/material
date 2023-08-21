@@ -30,6 +30,8 @@
         <module>mysql-mp-demo</module>
         <module>sharding-jdbc-demo</module>
         <module>kafka-demo</module>
+        <module>rocketMQ-demo</module>
+        <module>ES-demo</module>
     </modules>
     <name>material</name>
     <description>material</description>

@@ -49,3 +49,8 @@ for container_name in "${container_names[@]}"; do
   fi
 done
 ```
+
+## 停止当前所有容器
+```shell
+docker stop $(docker ps -q)
+```
