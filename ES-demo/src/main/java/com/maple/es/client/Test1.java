@@ -28,11 +28,16 @@ import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.CreateIndexResponse;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
+import org.elasticsearch.common.unit.Fuzziness;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.FuzzyQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.metrics.MaxAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.elasticsearch.xcontent.XContentType;
@@ -79,6 +84,68 @@ public class Test1 {
         // 范围查询
 //        queryByRange(client);
         // 模糊查询
+//        queryByFuzzy(client);
+        // 查询最大值
+//        queryMax(client);
+        // 分组查询
+        queryGroup(client);
+    }
+
+    private static void queryGroup(RestHighLevelClient client) throws IOException {
+        SearchRequest request = new SearchRequest();
+        request.indices("user");
+
+        SearchSourceBuilder builder = new SearchSourceBuilder();
+        AggregationBuilder field = AggregationBuilders.terms("ageGroup").field("age");
+        builder.aggregation(field);
+
+        request.source(builder);
+
+        SearchResponse response = client.search(request, RequestOptions.DEFAULT);
+        SearchHits hits = response.getHits();
+        System.out.println(hits.getTotalHits()); // 总数
+        System.out.println(response.getTook()); // 时间
+        for (SearchHit hit : hits) {
+            System.out.println(hit); // 每条记录
+        }
+    }
+
+    private static void queryMax(RestHighLevelClient client) throws IOException {
+        SearchRequest request = new SearchRequest();
+        request.indices("user");
+
+        SearchSourceBuilder builder = new SearchSourceBuilder();
+        AggregationBuilder field = AggregationBuilders.max("maxAge").field("age");
+        builder.aggregation(field);
+
+        request.source(builder);
+
+        SearchResponse response = client.search(request, RequestOptions.DEFAULT);
+        SearchHits hits = response.getHits();
+        System.out.println(hits.getTotalHits()); // 总数
+        System.out.println(response.getTook()); // 时间
+        for (SearchHit hit : hits) {
+            System.out.println(hit); // 每条记录
+        }
+    }
+
+    private static void queryByFuzzy(RestHighLevelClient client) throws IOException {
+        SearchRequest request = new SearchRequest();
+        request.indices("user");
+
+        SearchSourceBuilder builder = new SearchSourceBuilder();
+        // 允许一个不同
+        FuzzyQueryBuilder fuzziness = QueryBuilders.fuzzyQuery("name", "zhang").fuzziness(Fuzziness.ONE);
+        builder.query(fuzziness);
+
+        request.source(builder);
+        SearchResponse response = client.search(request, RequestOptions.DEFAULT);
+        SearchHits hits = response.getHits();
+        System.out.println(hits.getTotalHits()); // 总数
+        System.out.println(response.getTook()); // 时间
+        for (SearchHit hit : hits) {
+            System.out.println(hit); // 每条记录
+        }
     }
 
     private static void queryByRange(RestHighLevelClient client) throws IOException {

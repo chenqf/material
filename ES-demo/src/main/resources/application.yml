@@ -3,3 +3,6 @@ server:
 spring:
   application:
     name: ES-demo
+  elasticsearch:
+    uris: http://${ENV_CLOUD_ID}:9200
+    connection-timeout: 3s
