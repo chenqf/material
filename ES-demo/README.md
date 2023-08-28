@@ -50,6 +50,30 @@ Index看做一个库, Types相当于表, Documents相当于表的行
 + _primary_term: _primary_term主要是用来恢复数据时处理当多个文档的_seq_no一样时的冲突，避免PrimaryShard上的写入被覆盖。每当Primary
   Shard发生重新分配时，比如重启，Primary选举等，_primary_term会递增1
 
+## 分词插件
+
+建议使用IK分词器, [GITHUB:elasticsearch-analysis-ik](https://github.com/medcl/elasticsearch-analysis-ik)
+
+```shell
+#查看已安装插件
+bin/elasticsearch-plugin list
+#安装插件
+bin/elasticsearch-plugin install analysis-icu
+#删除插件
+bin/elasticsearch-plugin remove analysis-icu
+```
+
+**查看分词:**
+
+```shell
+POST _analyze
+{
+  "analyzer":"ik_max_word",
+  "text":"中华人民共和国"
+}
+```
+
+
 ## 基本命令操作
 
 ### 索引
@@ -330,246 +354,575 @@ GET /_msearch
 {"query" : {"term" : {"name":"fox100"}}, "from" : 0, "size" : 2}
 ```
 
-### 复杂查询
+### DSL Query:
 
-默认查询10条记录
++ _source : 是一个数组, 用来指定展示的字段
++ size : 指定查询结果中指定的条数, 默认10条
++ from : 显示跳过的初始结构数量, 默认为0
++ sort : 指定字段排序, 会让评分失效
+
+#### query.match_all
+
+匹配所有文档, `默认查询10条记录`
+
 ```shell
 GET /user/_doc/_search
-```
-
-DSL Query:
-
-```shell
-# match 匹配查询, 会对文本分词后匹配
-GET /user/_search
 {
   "query":{
-    "match":{
-      "address":"广州"
+    "match_all":{}
+  },
+  "_source": ["name","address"],
+  "sort":[
+    {
+      "age":"desc"
+    }
+  ],
+  "form":2,
+  "size":5
+}
+```
+
+#### 术语级别查询
+
+搜索内容不经分词直接用于文本匹配, 搜索对象多为`非text类型`字段
+
++ query.term 类似于SQL中的`=`查询
++ terms
++ range
+
+```shell
+GET /es_db/_search
+{
+  "query": {
+    "term": {
+      "age": {
+        "value": 28
+      }
     }
   }
 }
 ```
 
+对于text类型的字段, 在定义mapping结构时, 建议定义子类型为keyword, 使用子类型进行精确查询
+
 ```shell
-# term 精确匹配, 不会进行分词, 针对keyword类型进行查询
-GET /user/_search
+GET /es_db/_search
 {
   "query":{
-    "term":{
-      "name":"fox"
+    "term": {
+      "address.keyword": {
+        "value": "广州白云山公园"
+      }
     }
   }
 }
 ```
 
+默认户进行相关度算分, 可通过Constant Score将查询转换为Filtering, 避免算分, 提高性能
+
 ```shell
-# 根据查询项更新
-POST /user/_update_by_query
+GET /es_db/_search
 {
-  "query":{
-    "term":{
-      "name":"fox"
+  "query": {
+    "constant_score": {
+      "filter": {
+        "term": {
+          "address.keyword": "广州白云山公园"
+        }
+      }
+    }
+  }
+}
+```
+
+term处理多值字段时, 查询时包含, 不是等于
+
+```shell
+# {"name":"小明","interest":["跑步","篮球"]}
+
+POST /employee/_search
+{
+  "query": {
+    "term": {
+      "interest.keyword": {
+        "value": "跑步"
+      }
+    }
+  }
+}
+```
+
+`terms`: 精确匹配指定字段中包含的任何一个词项
+
+```shell
+POST /es_db/_search
+{
+  "query": {
+    "terms": {
+      "remark.keyword": ["java assistant", "java architect"]
+    }
+  }
+}
+```
+
+`exists`: 查询文档中是否存在对应的字段
+
+```shell
+GET /es_db/_search
+{
+  "query": {
+    "exists": {
+      "field": "remark"
+    }
+  }
+}
+```
+
+`ids`: 值为数组类型, 用在根据一组Id获取多个对应文档
+
+```shell
+GET /es_db/_search
+{
+  "query": {
+    "ids": {
+      "values": [1,2]
+    }
+  }
+}
+```
+
+**范围查询**
+
++ range: 范围关键字
++ gte: 大于等于
++ lte: 小于等于
++ gt: 大于
++ lt: 小于
++ now: 当前时间
+
+```shell
+POST /es_db/_search
+{
+  "query": {
+    "range": {
+      "age": {
+        "gte": 25,
+        "lte": 28
+      }
+    }
+  }
+}
+
+GET /product/_search
+{
+  "query": {
+    "range": {
+        "date": {
+        "gte": "2018-01-01"
+        }
+    }
+  }
+}
+```
+
+`prefix`: 前缀查询, 遍历所有倒排索引, 并找到所有前缀匹配的数据
+
+```shell
+GET /es_db/_search
+{
+  "query": {
+    "prefix": {
+      "address": {
+        "value": "广州"
+      }
+    }
+  }
+}
+```
+
+`wildcard`: 通配符查询, 不只比较开头, 支持更复杂的匹配模式
+
+```shell
+GET /es_db/_search
+{
+  "query": {
+    "wildcard": {
+      "address": {
+        "value": "*白*"
+      }
+    }
+  }
+}
+```
+
+`fuzzy`: 模糊匹配, 搜索时, 有时会打错字, fuzzy支持错别字的情形
+
++ fuzziness: 表示输入的错别字可以为几个 0-2 之间, 默认为0
++ prefix_length: 表示输入的关键字和ES查询的内容开头的第n个字符必须完全匹配
+  + 如果是1, 表示开头的字必须匹配
+  + 默认为0
+  + 加大该值, 可提高效率和准确率
+
+```shell
+GET /es_db/_search
+{
+  "query": {
+    "fuzzy": {
+      "address": {
+        "value": "白运山",
+        "fuzziness": 1 
+      }
+    }
+  }
+}
+```
+
+#### 全文检索
+
+会对输入的文本进行分词, 对于分词结果进行查询
+
+`match`: 会对查找的内容进行分词, 然后按分词匹配查找
+
++ query: 支持匹配的值
++ operator: 匹配的条件类型
+  + and: 查询项分词后, 每个词项都匹配
+  + or: 查询项分词后, 有一个词项匹配即可(默认)
++ minmum_should_match
+  + 当operator参数设置为or时,minnum_should_match参数用来控制匹配的分词的最少数量。
+
+
+
+```shell
+#match 分词后or的效果
+GET /es_db/_search
+{
+  "query": {
+    "match": {
+      "address": "广州白云山公园"
+    }
+  }
+}
+
+# 分词后 and的效果
+GET /es_db/_search
+{
+  "query": {
+    "match": {
+      "address": {
+        "query": "广州白云山公园",
+        "operator": "and"
+      }
+    }
+  }
+}
+
+# 最少匹配广州，公园两个词
+GET /es_db/_search
+{
+  "query": {
+    "match": {
+      "address": {
+        "query": "广州公园",
+        "minimum_should_match": 2
+      }
+    }
+  }
+}
+```
+
+`multi_match`: 多字段查询, 一个查询值, 在多个字段进行分词查询
+
+```shell
+GET /es_db/_search
+{
+  "query": {
+    "multi_match": {
+      "query": "长沙张龙",
+      "fields": [
+        "address",
+        "name"
+      ]
+    }
+  }
+}
+```
+
+`match_phrase`: 短语搜索, 对搜索文本进行分词, 到倒排索引中进行查找, 并要求`分词相邻` , 通过`slop`设置分词出现的最大间隔
+
+```shell
+GET /es_db/_search
+{
+  "query": {
+    "match_phrase": {
+      "address": "广州白云山",
+      "slop": 2
+    }
+  }
+}
+```
+
+`query_string`: 允许我们在单个查询字符串中指定AND | OR | NOT条件，同时也和 multi_match query 一样，支持多字段搜索
+
+query_string是在所有字段中搜索，范围更广泛。
+
+AND | OR | NOT 要求大写
+
+```shell
+# 未指定字段查询
+GET /es_db/_search
+{
+  "query": {
+    "query_string": {
+      "query": "赵六 AND 橘子洲"
+    }
+  }
+}
+
+# 指定单个字段查询
+GET /es_db/_search
+{
+  "query": {
+    "query_string": {
+      "default_field": "address",
+      "query": "白云山 OR 橘子洲"
+    }
+  }
+}
+
+# 指定多个字段查询
+GET /es_db/_search
+{
+  "query": {
+    "query_string": {
+      "fields": ["name","address"],
+      "query": "张三 OR (广州 AND 王五)"
+    }
+  }
+}
+```
+
+#### bool - 布尔查询
+
+按照布尔逻辑条件组织多条查询语句, 只有符合整个布尔条件的文档才会被搜索出来
+
++ must : 可包含多个查询语句, 每个条件均满足才能被搜索到
++ should: 可包含多个查询语句, 不存在must和filter时, 至少满足一个条件
++ filter: 可包含多个过滤条件, 每个条件均满足才能被搜索到
++ must_not: 可包含多个过滤条件, 每个条件均不满足才能被搜索到
+
+
+```shell
+GET /books/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "title": "java编程"
+          }
+        },
+        {
+          "match": {
+            "description": "性能优化"
+          }
+        }
+      ]
+    }
+  }
+}
+
+GET /books/_search
+{
+  "query": {
+    "bool": {
+      "should": [
+        {
+          "match": {
+            "title": "java编程"
+          }
+        },
+        {
+          "match": {
+            "description": "性能优化"
+          }
+        }
+      ],
+      "minimum_should_match": 1
+    }
+  }
+}
+
+GET /books/_search
+{
+  "query": {
+    "bool": {
+      "filter": [
+        {
+          "term": {
+            "language": "java"
+          }
+        },
+        {
+          "range": {
+            "publish_time": {
+              "gte": "2010-08-01"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+#### 高亮
+
+`highlight`: 可以让符合条件的文档中的关键词高亮
+
++ pre_tags: 前缀标签
++ post_tags: 后缀标签
++ tags_schema: 设置为styled可以使用内置高亮样式
++ require_field_match: 多字段高亮需要设置为false
+
+```shell
+GET /products/_search
+{
+  "query": {
+    "term": {
+      "name": {
+        "value": "牛仔"
+      }
     }
   },
-  "script":{
-    "source": "ctx._source.age = 20"
+  "highlight": {
+    "post_tags": ["</span>"],
+    "pre_tags": ["<span style='color:red'>"],
+    "fields": {
+      "*":{}
+    }
   }
+}
+
+```
+
+## 深度分页
+
+在查询页数特别大, 当from + size大于10000的时候, 就会出现问题
+
+ES通过参数index.max_result_window用来限制单次查询满足查询条件的结果窗口的大小，其默认值为10000。
+
+### 问题
+
+ES分页流程:
+
+1. 数据存储在各个分片中，协调节点将查询请求转发给各个节点，当各个节点执行搜索后，将排序后的前N条数据返回给协调节点。
+2. 协调节点汇总各个分片返回的数据，再次排序，最终返回前N条数据给客户端
+3. 这个流程会导致一个深度分页的问题，也就是翻页越多，性能越差，甚至导致ES出现OOM。
+
+每次有序的查询都会在每个分片中执行单独的查询，然后进行数据的二次排序，而这个二次排序的过程是发生在内存中的
+
+### 解决方案
+
+#### 避免使用深度分页
+
+谷歌/百度, 都没有跳页功能, 限制用户的查询数量
+
+淘宝/京东, 仅提供前100页的商品数据, 限制用户查询的数量
+
+#### 滚动查询 - Scroll Search
+
+在第一次搜索的时候, 保存一个当时的快照, 之后仅基于该快照搜索数据, 用户看不到期间变更的数据
+
+不适合实时性要求高的搜索场景, 官方已经不推荐使用, `常用于数据迁移`
+
+```shell
+# scroll=1m,说明采用游标查询，保持游标查询窗口1分钟
+GET /es_db/_search?scroll=1m
+{
+  "query": { "match_all": {}},
+  "size": 2
 }
 ```
 
-基于某个字段进行查询:
+查询结构除返回前2条记录, 还返回了一个游标ID值_scroll_id
+
+从第二次查询开始，每次查询都要指定_scroll_id参数(scroll_id不变):
 
 ```shell
-curl --location --request GET 'http://127.0.0.1:9200/<Index-name>/_search' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "query":{
-        "match":{
-            "category":"小米"
-        }
-    }
-}'
-```
-
-分页查询:
-
-```shell
-# 查第1页, 每页10条
-curl --location --request GET 'http://127.0.0.1:9200/<Index-name>/_search' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "query":{
-        "match":{
-            "category":"小米"
-        }
-    },
-    "from": 0,
-    "size": 10
-}'
-```
-
-
-
-排序:
-
-```shell
-curl --location --request GET 'http://127.0.0.1:9200/<Index-name>/_search' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "query":{
-        "match":{
-            "category":"小米"
-        }
-    },
-    "from": 0,
-    "size": 10,
-    "sort": {
-        "price": {
-            "order": "desc"
-        }
-    }
-}'
-```
-
-
-
-
-范围查询:
-
-```shell
-curl --location --request GET 'http://127.0.0.1:9200/<Index-name>/_search' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "query":{
-        "bool":{
-            "should":[
-                {
-                    "match":{
-                        "category": "小米"
-                    }
-                },
-                {
-                    "match":{
-                        "category": "华为"
-                    }
-                }
-            ],
-            "filter" : {
-                "range" : {
-                    "price" : {
-                        "gt" : 5000
-                    }
-                }
-            }
-        }
-    }
-}'
-```
-
-全文检索, 进行分词倒排索引检索:
-
-```shell
-curl --location --request GET 'http://127.0.0.1:9200/<Index-name>/_search' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "query":{
-        "match":{
-            "category":"小华"
-        }
-    }
-}'
-```
-
-完全匹配:
-
-```shell
-curl --location --request GET 'http://127.0.0.1:9200/<Index-name>/_search' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "query":{
-        "match_phrase":{
-            "category":"小米"
-        }
-    }
-}'
-```
-
-高亮匹配字段:
-
-```shell
-curl --location --request GET 'http://127.0.0.1:9200/<Index-name>/_search' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "query":{
-        "match_phrase":{
-            "category":"小米"
-        }
-    },
-    "highlight": {
-        "fields" : {
-            "category" : {}
-        }
-    }
-}'
-```
-
-聚合查询 - 分组统计:
-
-```shell
-# 统计价格相等的有几个, 分组名随意起名, size:0 代表不查询原始数据
-curl --location --request GET 'http://127.0.0.1:9200/<Index-name>/_search' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "aggs":{
-        "price_group":{
-            "terms":{
-                "field" : "price"
-            }
-        }
-    },
-    "size" : 0
-}'
-```
-
-聚合查询 - 查询平均值:
-
-```shell
-# 查询数据price字段的平均值, 分组名随意起名, size:0 代表不查询原始数据
-curl --location --request GET 'http://127.0.0.1:9200/<Index-name>/_search' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "aggs":{
-        "price_avg":{
-            "avg":{
-                "field" : "price"
-            }
-        }
-    },
-    "size" : 0
-}'
-```
-
-## 分词插件
-
-建议使用IK分词器, [GITHUB:elasticsearch-analysis-ik](https://github.com/medcl/elasticsearch-analysis-ik)
-
-```shell
-#查看已安装插件
-bin/elasticsearch-plugin list
-#安装插件
-bin/elasticsearch-plugin install analysis-icu
-#删除插件
-bin/elasticsearch-plugin remove analysis-icu
-```
-
-**查看分词:**
-
-```shell
-POST _analyze
+GET /_search/scroll
 {
-  "analyzer":"ik_max_word",
-  "text":"中华人民共和国"
+  "scroll": "1m",
+  "scroll_id" :"scroll_id"
+}
+```
+
+使用后删除:
+
+```shell
+DELETE /_search/scroll
+{
+  "scroll_id" : "scroll_id"
+}
+```
+
+#### search_after
+
+使用移动贯标, 作为上一页的结果来帮助检索下一页, `不适合大幅度跳页查询`
+
+搜索的查询和排序参数须保持不变
+
+1. 获取索引PIT: 创建一个时间点, 保留搜索中的当前索引状态
+
+```shell
+POST /es_db/_pit?keep_alive=1m
+#返回结果，会返回一个PID的值
+{
+ "id" :"pid"
+}
+```
+
+2. 根据PIT首次查询
+
+```shell
+GET /_search
+{
+  "query": {
+    "match_all": {}
+  },
+  "pit": {
+    "id": "pid",
+    "keep_alive": "1m"
+  },
+  "size": 2,
+  "sort": [
+    {"_id": "asc"} 
+  ]
+}
+```
+
+3. 根据search_after和pit进行翻页查询
+
+search_after的值为上一次查询返回的sort值
+
+```shell
+GET /_search
+{
+  "query": {
+    "match_all": {}
+  },
+  "pit": {
+    "id": "pit",
+    "keep_alive": "1m"
+  },
+  "size": 2,
+  "sort": [
+    {"_id": "asc"} 
+  ],
+  "search_after": [
+          "8",
+          7
+        ]
 }
 ```
 
