@@ -1,0 +1,5 @@
+server:
+  port: 8018
+spring:
+  application:
+    name: log-demo
