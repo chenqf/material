@@ -68,7 +68,7 @@ debug: 当此属性设置为true时, 将打印出logback内部日志信息, 默�
 在启动时指定当前环境所需的配置文件:
 
 ```shell
--Dlogging.config=/<path>/logback-spring-prod.xml
+java -jar /path/xx.jar --logging.config=/path/logback-spring-prod.xml
 ```
 
 > 构建应用时删除application.yaml, 不使用spring.profiles.active进行多环境配置, 将配置全部外置到K8S的configmap中

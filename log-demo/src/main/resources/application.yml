@@ -11,3 +11,6 @@ spring:
 #  level:
 #    root: debug # 全局日志级别
 #    com.maple: debug # 具体包下的类的日志级别
+
+logging:
+  config:
