@@ -9,9 +9,11 @@ keyword       id
 ------------------------
 name          1001,1002
 zhang         1001
-```
+ ```
 
 ## 集群架构
+
+![image-20230830150457135](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230830150457135.png)
 
 + 高可用性
   + 服务可用性: 允许有服务节点停止服务
@@ -24,9 +26,71 @@ ES集群架构的优势:
 + 提高系统的可用性, 部分节点停止服务, 整个集群的服务不受影响
 + 存储的水平扩容
 
+```shell
+GET /_cat/nodes?v #查看节点信息
+GET /_cat/health?v #查看集群当前状态：红、黄、绿
+GET /_cat/shards?v #查看各shard的详细情况 
+GET /_cat/shards/{index}?v #查看指定分片的详细情况
+GET /_cat/master?v #查看master节点信息
+GET /_cat/indices?v #查看集群中所有index的详细信息
+GET /_cat/indices/{index}?v #查看集群中指定index的详细信息
+```
+
+### 分片
+
++ 主分片（Primary Shard）
+  + 用以解决数据水平扩展的问题。通过主分片，可以将数据分布到集群内的所有节点之上
+  + 一个分片是一个运行的Lucene的实例
+  + 主分片数在索引创建时指定，后续不允许修改，除非Reindex
++ 副本分片（Replica Shard）
+  + 用以解决数据高可用的问题。 副本分片是主分片的拷贝
+  + 副本分片数，可以动态调整
+  + 增加副本数，还可以在一定程度上提高服务的可用性(读取的吞吐)
+
+集群分片状态:
+
++ Green: 主分片与副本都正常分配
++ Yellow: 主分片全部正常分配，有副本分片未能正常分配
++ Red: 有主分片未能分配。例如，当服务器的磁盘容量超过85%时,去创建了一个新的索引
+
+![image-20230830150517332](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230830150517332.png)
+
+### 节点
+
+节点类型:
+
++ Master Node：主节点
++ Master eligible nodes：可以参与选举的合格节点
++ Data Node：数据节点
++ Coordinating Node：协调节点
++ 其他节点
 
 主节点和副本节点都写入后, 才返回, 保证数据一致性
 日志类场景, 没必要分配副本节点(允许数据丢失)
+
+#### Master Node
+
++ 处理创建，删除索引等请求，负责索引的创建与删除
++ 决定分片被分配到哪个节点
++ 维护并且更新Cluster State
+
+非常重要, Production环境须解决单点问题
+
+> 为一个集群设置多个Master节点，每个节点只承担Master 的单一角色
+
+#### Data Node
+
+可以保存数据的节点，叫做Data Node，负责保存分片数据。
+
+> 通过增加数据节点可以解决数据水平扩展和解决数据单点问题
+
+#### Coordinating Node
+
+负责接受Client的请求， 将请求分发到合适的节点，最终把结果汇集到一起
+
+### 读写分离
+
+![image-20230830150444625](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230830150444625.png)
 
 ## 基本概念
 
@@ -827,6 +891,169 @@ GET /products/_search
 }
 
 ```
+
+## 聚合操作
+
++ 查询条件：指定需要聚合的文档，可以使用标准的 Elasticsearch 查询语法，如 term、match、range 等等。
++ 聚合函数：指定要执行的聚合操作，如 sum、avg、min、max、terms、date_histogram 等等。每个聚合命令都会生成一个聚合结果。
++ 聚合嵌套：聚合命令可以嵌套，以便更细粒度地分析数据。
+
+```shell
+GET <index_name>/_search
+{
+  "aggs": {
+    "<aggs_name>": { // 聚合名称需要自己定义
+      "<agg_type>": {
+        "field": "<field_name>"
+      }
+    }
+  }
+}
+```
+
++ aggs_name：聚合函数的名称
++ agg_type：聚合种类，比如是桶聚合（terms）或者是指标聚合（avg、sum、min、max等）
++ field_name：字段名称
+
+**数学运算(max/min/sum/avg)**
+
+```shell
+GET <index_name>/_search
+{
+  "aggs": {
+    "<aggs_name>": { // 聚合名称需要自己定义
+      "avg": {
+        "field": "<field_name>"
+      }
+    }
+  }
+}
+```
+
+**Group By**
+
+```shell
+GET <index_name>/_search
+{
+  "aggs": {
+    "by_size": { // 聚合名称需要自己定义
+      "terms": {
+        "field": "size"
+      }
+    }
+  }
+}
+```
+
+**多个聚合**
+
+```shell
+POST /employees/_search
+{
+  "size": 0, 
+  "aggs": {
+    "max_salary": {
+      "max": {
+        "field": "salary"
+      }
+    },
+    "min_salary": {
+      "min": {
+        "field": "salary"
+      }
+    },
+    "avg_salary": {
+      "avg": {
+        "field": "salary"
+      }
+    }
+  }
+}
+```
+
+**cardinate对搜索结果去重**
+
+```shell
+POST /employees/_search
+{
+  "size": 0,
+  "aggs": {
+    "cardinate": {
+      "cardinality": {
+        field": "job.keyword"
+      }
+    }
+  }
+}
+```
+
+**按照数字的范围，进行分桶**
+
+```shell
+# 工资0到10万，以 5000一个区间进行分桶
+POST employees/_search
+{
+  "size": 0,
+  "aggs": {
+    "salary_histrogram": {
+      "histogram": {
+        "field":"salary",
+        "interval":5000,
+        "extended_bounds":{
+          "min":0,
+          "max":100000
+        }
+      }
+    }
+  }
+}
+```
+
+**多次嵌套**
+
+```shell
+# 多次嵌套。根据工作类型分桶，然后按照性别分桶，计算工资的统计信息
+POST employees/_search
+{
+  "size": 0,
+  "aggs": {
+    "Job_gender_stats": {
+      "terms": {
+        "field": "job.keyword"
+      },
+      "aggs": {
+        "gender_stats": {
+          "terms": {
+            "field": "gender"
+          },
+          "aggs": {
+            "salary_stats": {
+              "stats": {
+                "field": "salary"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+### 集群下如何提高聚合精度
+
+1. 设置主分片为1
+
+2. 调大 shard_size 
+   + 官方推荐: size*1.5 + 10, shard_size 值越大，结果越趋近于精准聚合结果值
+   + size：是聚合结果的返回值，客户期望返回聚合排名前三，size值就是 3。
+   + shard_size: 每个分片上聚合的数据条数。shard_size 原则上要大于等于 size
+
+3. 将size设置为全量值 (2的32次方减去1也就是分片支持的最大值)
+   + 性能问题, 不推荐
+
+4. 使用Clickhouse/ Spark 进行精准聚合
+   + 数据量非常大、聚合精度要求高、响应速度快的业务场景
 
 ## 深度分页
 
