@@ -5,6 +5,8 @@ scanPeriod: 见识配置文件是否有修改的间隔时间, 若没给出时间
 debug: 当此属性设置为true时, 将打印出logback内部日志信息, 默认为false
 -->
 <configuration scan="true" scanPeriod="60 seconds" debug="false">
+    <!-- 全局配置，获取应用名称 -->
+    <property name="appName" value="${spring.application.name}" />
     <!--  输出到文件 - Production  -->
     <appender name="fileAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <!-- 基于时间和大小的滚动策略 -->
@@ -21,7 +23,7 @@ debug: 当此属性设置为true时, 将打印出logback内部日志信息, 默�
         <!-- 日志输出到文件中的格式 -->
         <encoder>
             <!-- %d表示日期时间, %thread表示线程名, %logger:类名, %-5level:级别从左显示5个字符, %msg:日志消息, %n:换行 -->
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] -- %msg%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [${appName:-unknown}] [%thread] %logger{36} - traceId:%X{traceId} - %msg%n</pattern>
             <charset>utf-8</charset>
         </encoder>
     </appender>

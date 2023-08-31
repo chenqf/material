@@ -22,7 +22,5 @@ docker run -d --name kafka-standalone --hostname kafka-standalone \
 
 
 
+
 ## 集群安装
-
-
-
