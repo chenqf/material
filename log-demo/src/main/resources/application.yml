@@ -4,14 +4,8 @@ spring:
   application:
     name: log-demo
 
-
-#logging:
-#  pattern:
-#    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} -- %-5level %logger{32} %thread -- %msg%n"  # 控制台输出格式
-#  level:
-#    root: debug # 全局日志级别
-#    com.maple: debug # 具体包下的类的日志级别
-
 logging:
   level:
     root: info
+
+#  config: E:\java_workspace\material\log-demo\src\main\resources\logback-spring-prod.xml

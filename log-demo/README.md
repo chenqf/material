@@ -53,16 +53,16 @@ application.yaml文件中进行配置, 将日志级别设置为debug, 控制台�
 
 ```yaml
 logging:
-  pattern:
-    console: %d{yyyy-MM-dd HH:mm:ss.SSS} -- %-5level %logger{32} %thread -- %msg%n  # 控制台输出格式
   level:
-    root: info # 全局日志级别
-    com.maple: debug # 具体包下的类的日志级别
+    root: debug # 全局日志级别
+    com.maple: info # 具体包下的类的日志级别
 ```
 
 ### 生产环境配置 
 
 使用`logback-spring.xml`进行配置, 按时间大小生成文件, 并指定最多保留日志份数
+
+将所有INFO以上级别日志输出到一个日志文件中, 将ERROR以上级别日志输出到一个文件中
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -72,32 +72,77 @@ scanPeriod: 见识配置文件是否有修改的间隔时间, 若没给出时间
 debug: 当此属性设置为true时, 将打印出logback内部日志信息, 默认为false
 -->
 <configuration scan="true" scanPeriod="60 seconds" debug="false">
-    <!--  输出到文件 - Production  -->
+    <!-- 全局配置，获取应用名称 -->
+    <springProperty scope="context" name="SPRING_APP_NAME" source="spring.application.name"/>
+    <property name="APP_NAME" value="${SPRING_APP_NAME}"/>
+    <!-- 日志输出格式: %d表示日期时间, %thread表示线程名, %logger:类名, %-5level:级别从左显示5个字符, %msg:日志消息, %n:换行 -->
+    <property name="FILE_LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [${SPRING_APP_NAME:-unknown}] [%thread] %logger{36} - traceId:%X{traceId} - %msg%n" />
+
+    <!-- 输出到控制台 -->
+    <appender name="consoleAppender" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+            <charset>utf-8</charset>
+        </encoder>
+    </appender>
+
+    <!--  所有日志输出到文件 - Production  -->
     <appender name="fileAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <!-- 基于时间和大小的滚动策略 -->
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <!-- 日志文件输出的文件名, 必须包含%i, 从0开始 -->
-            <fileNamePattern>logs/myapp.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <fileNamePattern>logs/${APP_NAME:-app}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
             <!-- 设置最大保留的历史日志文件数量 -->
             <maxHistory>30</maxHistory>
             <!-- 每个文件最大20MB,超过最大值新建一个文件 -->
-            <maxFileSize>10MB</maxFileSize>
+            <maxFileSize>20MB</maxFileSize>
             <!-- 所有日志加起来的最大的大小 -->
             <totalSizeCap>400MB</totalSizeCap>
         </rollingPolicy>
-        <!-- 日志输出到文件中的格式 -->
         <encoder>
-            <!-- %d表示日期时间, %thread表示线程名, %logger:类名, %-5level:级别从左显示5个字符, %msg:日志消息, %n:换行 -->
-            <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] %-5level [%thread] %logger{36} - traceId:%X{traceId} - %msg%n</pattern>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
             <charset>utf-8</charset>
         </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>info</level>
+        </filter>
+    </appender>
+
+    <!--  Error日志单独输入到一个文件  -->
+    <appender name="errorFileAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/error/${SPRING_APP_NAME:-app}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+            <charset>utf-8</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>error</level>
+        </filter>
+    </appender>
+
+    <!-- 异步输出 -->
+    <appender name="asyncAppender" class="ch.qos.logback.classic.AsyncAppender">
+        <!-- 默认如果队列的80%已满,则会丢弃TRACT、DEBUG、INFO级别的日志，若要保留全部日志，设置为0 -->
+        <discardingThreshold>0</discardingThreshold>
+        <!-- 更改默认的队列的深度,该值会影响性能.默认值为256 -->
+        <queueSize>256</queueSize>
+        <!-- 添加附加的appender,最多只能添加一个 -->
+        <appender-ref ref="fileAppender"/>
+        <includeCallerData>true</includeCallerData>
     </appender>
 
     <!--  必选节点, 指定日志的输出级别, 只有一个level属性  -->
     <!--  生产环境INFO  -->
     <root level="INFO">
+        <!--  开启控制台输出  -->
+        <appender-ref ref="consoleAppender"/>
         <!--  开启文件输出  -->
-        <appender-ref ref="fileAppender"/>
+        <appender-ref ref="asyncAppender"/>
+        <!-- error 日志 -->
+        <appender-ref ref="errorFileAppender"/>
     </root>
 </configuration>
 ```
@@ -142,7 +187,9 @@ mv filebeat-7.17.3-linux-x86_64 filebeat
 
 ```shell
 # 启动filebeat
-./filebeat -c filebeat.yml & # -e 查看filebeat日志 
+./filebeat -c filebeat_conf.yml # -e 查看filebeat日志 
+# 后台启动, 使用exit才不会退出程序
+nohup ./filebeat -c filebeat_conf.yml >/dev/null 2>&1 &
 ```
 
 ## Logstash
@@ -160,7 +207,9 @@ mv logstash-7.17.3-linux-x86_64 logstash
 
 启动:
 ```shell
-bin/logstash -f job/filebeat.conf
+bin/logstash -f logstash.conf
+# 后台启动
+nohup bin/logstash -f logstash.conf >/dev/null 2>&1 &
 ```
 
 配置文件包含三部分:
@@ -174,7 +223,7 @@ bin/logstash -f job/filebeat.conf
 + Filebeat -> Logstash -> ElasticSearch
 + Filebeat -> Kafka -> Logstash -> ElasticSearch
 
-## Filebeat -> ElasticSearch
+### Filebeat -> ElasticSearch
 
 收集到的日志, 不做任何数据清洗, 发送到ElasticSearch
 
@@ -182,9 +231,18 @@ bin/logstash -f job/filebeat.conf
 filebeat.inputs:
 - type: log
   enabled: true
-  tags: ["micr"]
+  tags: ["micr_all"]
   paths:
     - /software/test_jar/logs/*.log # 收集日志的位置
+  multiline:
+    pattern: '^\[[0-9]{4}-[0-9]{2}-[0-9]{2}' # 处理error日志, 将非日期开头的信息算作前一行
+    negate: true
+    match: after
+- type: log
+  enabled: true
+  tags: ["micr_error"]
+  paths:
+    - /software/test_jar/logs/error/*.log # 收集日志的位置
   multiline:
     pattern: '^\[[0-9]{4}-[0-9]{2}-[0-9]{2}' # 处理error日志, 将非日期开头的信息算作前一行
     negate: true
@@ -192,32 +250,53 @@ filebeat.inputs:
 output.elasticsearch:
   hosts: ["localhost:9200"] # elasticsearch的集群地址
   indices:
-    - index: "myapp-log-from-filebeat-%{+yyyy.MM.dd}" # 发送到elasticsearch的indexName(自动创建)
+    - index: "app-all-log-%{+yyyy.MM.dd}" # 所有日志对应的ES索引
       when.contains:
-        tags: "micr"
+        tags: "micr_all"
+    - index: "app-error-log-%{+yyyy.MM.dd}" # Error日志对应的ES索引
+      when.contains:
+        tags: "micr_error"
   #username: "elastic"
   #password: "changeme"
 ```
 
-## Filebeat -> Logstash -> ElasticSearch
+### Filebeat -> Logstash -> ElasticSearch
 
-Filebeat配置:
+Filebeat收集日志发送给Logstash, Logstash进行清洗过滤数据最后发送给ElasticSearch
+
+**Filebeat配置:**
 
 ```yaml
 filebeat.inputs:
-- type: log
-  enabled: true
-  paths:
-    - /software/test_jar/logs/*.log # 收集日志的位置
-  multiline:
-    pattern: '^\[[0-9]{4}-[0-9]{2}-[0-9]{2}' # 处理error日志, 将非日期开头的信息算作前一行
-    negate: true
-    match: after
+  - type: log
+    enabled: true
+    paths:
+      - /software/test_jar/logs/*.log # 收集日志的位置
+    fields:
+      log_type: all # 指定当前为所有日志
+    multiline:
+      pattern: '^\[[0-9]{4}-[0-9]{2}-[0-9]{2}' # 处理error日志, 将非日期开头的信息算作前一行
+      negate: true
+      match: after
+  - type: log
+    enabled: true
+    paths:
+      - /software/test_jar/logs/error/*.log # 收集日志的位置
+    fields:
+      log_type: error # 指定当前仅为ERROR日志
+    multiline:
+      pattern: '^\[[0-9]{4}-[0-9]{2}-[0-9]{2}' # 处理error日志, 将非日期开头的信息算作前一行
+      negate: true
+      match: after
 output.logstash:
-  hosts: ["localhost:5044"] # logstash对应的位置
+  hosts: ["localhost:5044"] # logstash对应的位置, 可指定多个
+  loadbalance: true # 随机找一个logstash进行传输, 若失败换下一个
+  index: filebeat
 ```
 
-Logstash配置:
+**Logstash配置:**
+
+通过filebeat中的fields.log_type判断当前日志来源, 分别发往不同Index
 
 ```shell
 input {
@@ -229,9 +308,14 @@ input {
   }
 }
 filter {
+  if [fields][log_type] == "all" {
+    mutate { add_field => { "[@metadata][index_prefix]" => "app-all-log" } }
+  } else if [fields][log_type] == "error" {
+    mutate { add_field => { "[@metadata][index_prefix]" => "app-error-log" } }
+  }
   grok {
     overwrite => ["message"]
-    match => {"message" => "(?m)^\[%{TIMESTAMP_ISO8601:timestamp}\] %{LOGLEVEL:level}\s*\[%{DATA:thread}\]\s*%{DATA:class} - traceId:%{DATA:traceId} - (?<message>.*)"}
+    match => {"message" => "(?m)^\[%{TIMESTAMP_ISO8601:timestamp}\] %{LOGLEVEL:level}\s*\[%{DATA:appName}\]\s*\[%{DATA:thread}\]\s*%{DATA:class} - traceId:%{DATA:traceId} - (?<message>.*)"}
   }
   grok {
     overwrite => ["message"]
@@ -242,18 +326,19 @@ filter {
     target => "indexTime" # 将解析后的日期保存到这个字段中
   }
   ruby {
-    code => "event.set('index.date', event.get('indexTime').time.localtime.strftime('%Y-%m-%d'))" # 基于indexTime字段获取日期放入index.date
+    code => "event.set('index.date', event.get('indexTime').time.localtime.strftime('%Y.%m.%d'))" # 基于indexTime字段获取日期放入index.date
   }
   mutate {
     remove_field => ["indexTime"]
+  }
+  prune { 
+    whitelist_names => ["index.date","timestamp","level","appName","thread","class","traceId","message","stacktrace"] # 仅保留如下字段
   }
 }
 output {
   elasticsearch {
     hosts => ["localhost:9200"]
-    #index => "myapp-log-from-filebeat-logstash-%{+YYYY-MM-dd}" # 以当前系统时间作为index
-    index => "myapp-log-from-filebeat-logstash-%{index.date}" # 以日志中时间作为index
-
+    index => "%{[@metadata][index_prefix]}-%{index.date}" 
   }
   stdout{
     codec=>rubydebug
@@ -263,6 +348,7 @@ output {
 
 获取字段如下:
 
++ appName : 应用名称
 + timestamp : 打印日志的时间
 + level : 日志级别
 + thread : 所属线程名
@@ -271,84 +357,102 @@ output {
 + message : 日志消息
 + stacktrace : error级别日志的堆栈信息
 
-  
-**发送至Kafka**
+### Filebeat -> Kafka -> Logstash -> ElasticSearch
+
+Filebeat收集数据发送给Kafka, Kafka传送数据给Logstash, Logstash进行清洗过滤数据最后发送给ElasticSearch
+
+Logstash是基于内存的, 容易出现宕机, Kafka保证了日志不会丢失
+
+**Filebeat配置:**
 
 ```yaml
 filebeat.inputs:
-- type: log
-  enabled: true
-  paths:
-    - /software/test_jar/logs/*.log # 收集日志的位置
-filebeat.config.modules:
-  path: ${path.config}/modules.d/*.yml
-  reload.enabled: false
-setup.template.settings:
-  index.number_of_shards: 1
+  - type: log
+    enabled: true
+    paths:
+      - /software/test_jar/logs/*.log # 收集日志的位置
+    fields:
+      log_topic: micr_all_log
+      log_type: all 
+    multiline:
+      pattern: '^\[[0-9]{4}-[0-9]{2}-[0-9]{2}' # 处理error日志, 将非日期开头的信息算作前一行
+      negate: true
+      match: after
+  - type: log
+    enabled: true
+    paths:
+      - /software/test_jar/logs/error/*.log # 收集日志的位置
+    fields:
+      log_topic: micr_error_log
+      log_type: error 
+    multiline:
+      pattern: '^\[[0-9]{4}-[0-9]{2}-[0-9]{2}' # 处理error日志, 将非日期开头的信息算作前一行
+      negate: true
+      match: after
 output.kafka:
-  hosts: ["localhost:9092"] #集群地址
+  hosts: ["localhost:9092"] #Kafka集群地址
   topic: '%{[fields.log_topic]}' # 主题名(自动创建)
   partition.round_robin:
     reachable_only: false
   required_acks: 1
   compression: gzip
   max_message_bytes: 1000000 # 单位B
-processors:
-  - add_host_metadata:
-      when.not.contains.tags: forwarded
-  - add_cloud_metadata: ~
-  - add_docker_metadata: ~
-  - add_kubernetes_metadata: ~
 ```
 
+**Logstash配置:**
 
-
-**从Filebeat接收数据**
-```shell
-input {
-  beats {
-    port=>5044
-    codec=>plain{
-      charset=>"UTF-8"
-    }
-  }
-}
-```
-
-**从Kafka接收数据**
 ```shell
 input {
   kafka {
     bootstrap_servers => ["localhost:9092"]
-    topics => ["myapp"]
-    group_id => "myapp_log"
+    topics => ["micr_all_log","micr_error_log"]
+    group_id => "logstash"
+    auto_offset_reset => "latest"
     consumer_threads => 1
     codec => json
-    type => myapp
   }
 }
-```
-
-**对kafka中传输的数据json后进行匹配**
-```shell
 filter {
+  if [fields][log_type] == "all" {
+    mutate { add_field => { "[@metadata][index_prefix]" => "app-all-log" } }
+  } else if [fields][log_type] == "error" {
+    mutate { add_field => { "[@metadata][index_prefix]" => "app-error-log" } }
+  }
   grok {
-    match => { "message" => "%{TIMESTAMP_ISO8601:timestamp} %{LOGLEVEL:loglevel}  \[%{DATA:thread}\] %{DATA:class} - traceId:%{DATA:traceId} - %{GREEDYDATA:message}" }
+    overwrite => ["message"]
+    match => {"message" => "(?m)^\[%{TIMESTAMP_ISO8601:timestamp}\] %{LOGLEVEL:level}\s*\[%{DATA:appName}\]\s*\[%{DATA:thread}\]\s*%{DATA:class} - traceId:%{DATA:traceId} - (?<message>.*)"}
+  }
+  grok {
+    overwrite => ["message"]
+    match => {"message" => "(?m)(?<message>.*?)\n(?<stacktrace>.*)"}
+  }
+  date {
+    match => ["timestamp","yyyy-MM-dd HH:mm:ss.SSS"]
+    target => "indexTime" # 将解析后的日期保存到这个字段中
+  }
+  ruby {
+    code => "event.set('index.date', event.get('indexTime').time.localtime.strftime('%Y.%m.%d'))" # 基于indexTime字段获取日期放入index.date
+  }
+  mutate {
+    remove_field => ["indexTime"]
+  }
+  prune { 
+    whitelist_names => ["index.date","timestamp","level","appName","thread","class","traceId","message","stacktrace"] # 仅保留如下字段
+  }
+}
+output {
+  elasticsearch {
+    hosts => ["localhost:9200"]
+    index => "%{[@metadata][index_prefix]}-%{index.date}" 
+  }
+  stdout{
+    codec=>rubydebug
   }
 }
 ```
 
+## Kibana 查看日志
 
-logstash解析数据传输致ES时, 要使用日志中的时间作为索引而不是当前时间作为索引
+## TODO
 
-
-
-Filebeat部署
-
-Logstash部署
-
-ES部署
-
-Logstash 集群?
-
-promtail 收集日志 loki 云原生
+云原生 下使用 loki 收集日志 promtail
