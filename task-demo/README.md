@@ -144,6 +144,31 @@ public class ScheduleService {
 }
 ```
 
+**使用分布式锁实现集群环境下只有一台机器执行任务**
+
+```java
+@Service
+@Slf4j
+public class ScheduleService {
+    @Autowired
+    private RedissonClient redissonClient;
+    // 秒 分 时 日 月 周几
+    @Scheduled(cron = "30 * * * * *") // 每分钟的第30秒
+    public void ScheduleMethod() {
+        RLock lock = redissonClient.getLock("myScheduledTaskLock");
+        // 尝试获取锁，如果获取失败，立即返回，不会阻塞
+        if (lock.tryLock()) {
+            try {
+                log.info(new Date() + " job1 :定时任务..");
+            } finally {
+                // 释放锁
+                lock.unlock();
+            }
+        }
+    }
+}
+```
+
 ## XXL-Job
 
 

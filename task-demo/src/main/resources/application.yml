@@ -3,6 +3,10 @@ server:
 spring:
   application:
     name: task-demo
+  redis:
+    host: ${ENV_CLOUD_IP}
+    port: 6379
+    password: chenqfredis
   mail:
     password: ${ENV_MAIL_USERNAME}
     username: ${ENV_MAIL_PASSWORD}
