@@ -12,8 +12,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * @author chenqf
  */
 @SpringBootApplication
-@EnableAsync
-@EnableScheduling
 public class TaskApplication {
     public static void main(String[] args) {
         ConfigurableApplicationContext applicationContext = SpringApplication.run(TaskApplication.class, args);
