@@ -1,0 +1,5 @@
+server:
+  port: 8019
+spring:
+  application:
+    name: spi-demo

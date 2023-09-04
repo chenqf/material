@@ -1,0 +1,3 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+  com.maple.common.config.Spi1Config,\
+  com.maple.common.config.Spi2Config

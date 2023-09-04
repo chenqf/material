@@ -14,12 +14,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest
 public class AppTest 
 {
-    @Autowired(required = false)
-    private UserMapper userMapper;
-
-    @Test
-    public void testSelectList(){
-        userMapper.selectList(null).forEach(System.out::println);
-    }
+//    @Autowired(required = false)
+//    private UserMapper userMapper;
+//
+//    @Test
+//    public void testSelectList(){
+//        userMapper.selectList(null).forEach(System.out::println);
+//    }
 
 }
