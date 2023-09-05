@@ -25,7 +25,6 @@
         <module>stream-demo</module>
         <module>lock-redis</module>
         <module>juc-demo</module>
-        <module>mongo-demo</module>
         <module>mybatis-plus-demo</module>
         <module>mysql-mp-demo</module>
         <module>sharding-jdbc-demo</module>
