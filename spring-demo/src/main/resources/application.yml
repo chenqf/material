@@ -1,0 +1,8 @@
+server:
+  port: 8020
+spring:
+  application:
+    name: spring-demo
+  main:
+    lazy-initialization: true # 所有单例bean全部默认懒加载
+

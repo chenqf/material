@@ -1,9 +1,7 @@
 
 + 悲观锁碰到读写分离 - mybatis 时候试试
 + 文件上传大小配置
-+ @import
 + 批处理
-+ 异步任务
 + 适配器模式
 + 每个功能实际工作的例子
 + redis 悲观锁-乐观锁
@@ -26,7 +24,6 @@
 + 加密算法
 + SQL解析
   + antlr4
-+ SPI机制
 + 数据双写方案
 + mysql和redis数据一致性
 + spring-boot 启动参数优先级
@@ -37,3 +34,12 @@
 + Zipkin
 + i18n
 + 线程池监控
++ 安全管理器
++ RabbitMq迁移
++ spring事件发布-(启动时会发布一次)
++ ASM
++ SQL-数据分析
++ JFR
++ 动态代理 再看一下 https://vip.tulingxueyuan.cn/live_pc/l_63b7c2b3e4b0fc5d1221ccd4 后面
++ 字段校验
++ spring bean 声明周期

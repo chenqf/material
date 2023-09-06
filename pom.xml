@@ -33,6 +33,7 @@
         <module>ES-demo</module>
         <module>log-demo</module>
         <module>spi-demo</module>
+        <module>spring-demo</module>
     </modules>
     <name>material</name>
     <description>material</description>
