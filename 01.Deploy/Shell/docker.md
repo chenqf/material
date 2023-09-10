@@ -89,6 +89,7 @@ ENV CLASSPATH $JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar:$JRE_HOME/lib:$CLAS
 ENV PATH $JAVA_HOME/bin:$PATH
 ```
 
+
 **基于Dockerfile构建镜像:**
 
 ```shell

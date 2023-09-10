@@ -1,10 +1,48 @@
 # Nacos
 
-## docker环境下nacos集群部署及nacos数据持久化
+## 集群
 
-TODO
+![image-20230908163449367](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230908163449367.png)
+
+![image-20230908162132905](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230908162132905.png)
+
+> 使用VIP/nginx请求时，需要配置成TCP转发，不能配置http2转发，否则连接会被nginx断 开。 9849和7848端口为服务端之间的通信端口，请勿暴露到外部网络环境和客户端测。
+
+**部署:**
+
+1. 部署3台以上nacos作为一个集群
+2. 将nacos连接到mysql做数据持久化
+3. 使用nginx或HaProxy做负载均衡器
+
+**访问nacos管理界面**:
+
+http://{hostname}:8848/nacos
+
+登录 ，用户名和密码都是nacos
 
 ## 注册中心
+
+**什么是注册中心:**
+
+![image-20230908161431528](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230908161431528.png)
+
+**注册中心选型:**
+
+![image-20230908161517614](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230908161517614.png)
+
+**nacos注册中心架构:**
+
+![image-20230908161628033](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230908161628033.png)
+
+**核心功能:**
+
+1. **服务注册:** Nacos Client会通过发送REST请求的方式向Nacos Server注册自己的服务，提供自身的元 数据，比如ip地址、端口等信息
+2. **服务心跳:** 在服务注册后，Nacos Client会维护一个定时心跳来持续通知Nacos Server，说明服务一 直处于可用状态，防止被剔除。`默认5s发送一次心跳`
+3. **服务同步：**Nacos Server集群之间会互相同步服务实例，用来保证服务信息的一致性。
+4. **服务发现：**服务消费者（Nacos Client）在调用服务提供者的服务时，会发送一个REST请求给Nacos Server，获取上面注册的服务清单，并且缓存在Nacos Client本地，同时会在Nacos Client本地开启 一个定时任务定时拉取服务端最新的注册表信息更新到本地缓存
+5. **服务健康检查：**Nacos Server会开启一个定时任务用来检查注册服务实例的健康情况，对于超过15s 没有收到客户端心跳的实例会将它的healthy属性置为false(客户端服务发现时不会发现)，如果某个实 例超过30秒没有收到心跳，直接剔除该实例(被剔除的实例如果恢复发送心跳则会重新注册)
+
+### 微服务整合Nacos注册中心
 
 #### 依赖 pom.xml
 

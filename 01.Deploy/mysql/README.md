@@ -1,17 +1,21 @@
 # Mysql
 
+```shell
+docker network create maple-net
+docker pull mysql:8.0
+```
+
 ## 单机安装
 
 ```shell
 export MYSQL_ROOT_PASSWORD=123456
 export PORT=3306
-export DOCKER_NAME=mysql
+export DOCKER_NAME=mysql-standalone
 export BASE_DIR=/docker/mysql/standalone
 mkdir -p ${BASE_DIR}
-docker pull mysql:8.0
 docker stop ${DOCKER_NAME} &> /dev/null
 docker rm ${DOCKER_NAME} &> /dev/null
-docker run --name ${DOCKER_NAME} -v ${BASE_DIR}/conf:/etc/mysql/conf.d -v ${BASE_DIR}/logs:/logs \
+docker run --name ${DOCKER_NAME} --network maple-net -v ${BASE_DIR}/conf:/etc/mysql/conf.d -v ${BASE_DIR}/logs:/logs \
 -v ${BASE_DIR}/data:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD} -d -i -p ${PORT}:3306 mysql:8.0
 # 进入容器
 # docker exec -it ${DOCKER_NAME} /bin/bash
@@ -47,19 +51,19 @@ rm -rf ${BASE_DIR}/slave
 mkdir -p ${BASE_DIR}/master
 mkdir -p ${BASE_DIR}/slave
 
-docker network create mysql-net
+docker network create maple-net
 docker stop mysql-master &> /dev/null
 docker rm mysql-master &> /dev/null
 docker stop mysql-slave &> /dev/null
 docker rm mysql-slave &> /dev/null
 
-docker run -d --name mysql-master --network mysql-net -p 3307:3306 \
+docker run -d --name mysql-master --network maple-net -p 3307:3306 \
 -v ${BASE_DIR}/master/conf:/etc/mysql/conf.d -v ${BASE_DIR}/master/logs:/logs -v ${BASE_DIR}/master/data:/var/lib/mysql \
 -e MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD} mysql:8.0 \
 --server-id=1 --log_bin=master-bin --log_bin-index=master-bin.index \
 --default_authentication_plugin=mysql_native_password
 
-docker run -d --name mysql-slave --network mysql-net -p 3308:3306 \
+docker run -d --name mysql-slave --network maple-net -p 3308:3306 \
 -v ${BASE_DIR}/slave/conf:/etc/mysql/conf.d -v ${BASE_DIR}/slave/logs:/logs -v ${BASE_DIR}/slave/data:/var/lib/mysql \
 -e MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD} mysql:8.0 \
 --server-id=2 --log_bin=mysql-bin --relay-log-index=slave-relay-bin.index --relay-log=slave-relay-bin --read-only=1 \

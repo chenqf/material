@@ -42,7 +42,7 @@ CPU需要不停的切换各个线程, 切换回来以后, 需要知道从哪开�
 
 如果请求分配的栈容量超过JVM允许的最大容量会抛出`StackOverflowError`
 
-可以使用 `-Xss` 来设置线程中的最大栈空间
+可以使用 `-Xss` 来设置线程中的最大栈空间, `不推荐更改`
 
 ![image-20230907212750359](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230907212750359.png)
 
@@ -54,7 +54,6 @@ CPU需要不停的切换各个线程, 切换回来以后, 需要知道从哪开�
 + **`操作数栈`**
 + 动态链接
 + 方法返回地址
-+ 附加信息
 
 ### 局部变量表 Local Variables
 
@@ -192,6 +191,8 @@ public class BindTest {
 
 **非虚方法:**
 
+好好研究多态之后, 再回来: https://www.bilibili.com/video/BV1PJ411n7xZ?p=57&spm_id_from=pageDriver&vd_source=0494972cf815a7a4a8ac831a4c0a1229
+
 如果编译期就确定了具体的调用版本, 版本在运行期不可变, 则称为`非虚方法`
 
 + 静态方法
@@ -200,7 +201,83 @@ public class BindTest {
 + 实例构造器
 + 父类方法
 
+**非虚方法:**
+
+在ClassLoader中的Resolve阶段确定符号引用对应的直接引用, 并生成虚方法表
+
+#### 调用指令
+
+1. `invokestatic : 调用静态方法` - 非虚方法
+2. `invokespecial: 调用<init>方法、私有及父类方法, 解析阶段确定唯一方法版本` - 非虚方法
+3. invokevirtual: 调用所有虚方法
+4. invokeinterface: 调用接口方法
+5. invokedynamic: 动态调用指令, 动态解析出所需要调用的方法, 然后执行
+
 ### 帧数据区 - 方法返回地址
 
-### 帧数据区 - 附加信息
+存储调用者的PC寄存器的值
+
+用于在当前方法执行完成后, 拿到调用者的PC寄存器值, 继续执行
+
+**退出方法的两种方式:**
+
+1. 正常退出: 执行完成, 基于方法返回地址
+2. 异常退出: 遇到异常, 没有在方法内进行处理(异常表中没有匹配), 导致方法退出
+
+****
+
+从VM Stack来看线程是否安全:
+
+```java
+public class ThreadSafeTest {
+
+    // 线程安全
+    public static void method1(){
+        StringBuilder builder = new StringBuilder();
+        builder.append("s");
+        builder.append("s");
+    }
+
+
+    // 线程不安全
+    public static void method2(StringBuilder builder){
+        builder.append("s");
+        builder.append("s");
+    }
+
+    // 线程不安全
+    public static StringBuilder method3(){
+        StringBuilder builder = new StringBuilder();
+        builder.append("s");
+        builder.append("s");
+        return builder;
+    }
+}
+```
+
+## 本地方法栈 Native Method Stack
+
+### 本地方法 Native Method
+
+> 基本不用
+
+就是一个Java调用非Java代码的接口
+
+使用`native`修饰的方法, 就是非Java实现的方法, 就是一个`本地方法`
+
+**何时使用:**
+
+1. 与Java环境外交互
+2. 与操作系统交互
+
+### 什么是本地方法栈
+
+VM Stack用于管理Java方法的调用, 本地方法栈用于管理本地方法的调用
+
+1. 线程私有
+2. 栈容量可设置
+
+> Hotspot JVM中, 直接将本地方法栈和虚拟机栈合二为一
+
+## 堆 Heap
 

@@ -45,6 +45,7 @@
 + 动态代理 再看一下 https://vip.tulingxueyuan.cn/live_pc/l_63b7c2b3e4b0fc5d1221ccd4 后面
 + 字段校验
 + spring bean 声明周期
++ 好好研究一下多态
 
 架构师每天都在想什么:
 + 如何让系统更快
