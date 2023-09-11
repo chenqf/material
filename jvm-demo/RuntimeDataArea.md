@@ -281,3 +281,254 @@ VM Stack用于管理Java方法的调用, 本地方法栈用于管理本地方法
 
 ## 堆 Heap
 
+进程内唯一, 多线程共享, JVM启动时候即被创建, 其空间大小也就确定了
+
+堆处于物理上不一定连续的内存空间中, 但在逻辑上是连续额的
+
+方法执行结束, 栈中内存被销毁, 但栈中的对象引用不会立即销毁, 要等到下一次GC
+
++ -Xms: 初始堆空间大小 = -XX:InitialHeapSize
++ -Xmx: 最大堆空间大小 = -XX:MaxHeapSize
++ `-XX:+PrintGCDetails` : 打印堆内存详情 
+
+现代GC都基于分代收集理论, Java8+以后, 内存逻辑上分为三部分: 
+
++ 新生区
++ 养老区
++ `元空间`, Java7叫做永久区
+
+新生区内存 + 养老区内存 = Xms/Xmx
+
+### 堆内存大小与OOM
+
+> 本地工具: Java VisualVM (JDK8内置)
+
++ -Xms: 初始堆空间大小 = -XX:InitialHeapSize
+  + 默认: 物理内存 / 64
++ -Xmx: 最大堆空间大小 = -XX:MaxHeapSize
+  + 默认: 物理内存 / 4
+
+当堆区内存超过`-Xmx`时, 则抛出`OutOfMemoryError`
+
+通常会将`-Xms`和`-Xmx`两个参数配置`相同`的值, 其目的是在GC结束后不需要重新计算堆区的大小, 避免扩容缩容
+
+```java
+public class HeapTest {
+  public static void main(String[] args) {
+    // -Xms
+    long l = Runtime.getRuntime().totalMemory();
+    // -Xmx
+    long n = Runtime.getRuntime().maxMemory();
+  }
+}
+```
+
+**查看当前运行的Jvm进程:**
+
+```shell
+Jps
+```
+
+### 年轻代与老年代
+
+![image-20230911132246621](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230911132246621.png)
+
+新生代和老年代在堆结构的占比(一般不会调整):
+
+设置`-XX:NewRatio=2`, 表示新生代占1, 老年代占2, 新生代占整个堆的1/3, `默认为2`
+
+设置`-XX:SurvivorRatio=8`, 表示Eden占8, Survivor0和Survivor1占1
+
+![image-20230911133840239](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230911133840239.png)
+
+> 几乎所有new出来的对象都是在`Eden`中创建的
+
+> 绝大多数对象的销毁都是在`新生代`中进行的
+
+**查看某个Jvm进程内存使用情况:**
+
+```shell
+jstat -gc <pid>
+```
+
+![image-20230911130538695](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230911130538695.png)
+
++ OC: 老年代总量
++ OU: 老年代使用量
++ EC: 新生代中伊甸园区总量
++ EU: 新生代中伊甸园区使用量
++ S0C: 新生代中S0区总量
++ S0U: 新生代中S0区使用量
++ S1C: 新生代中S0区总量
++ S1U: 新生代中S0区使用量
+
+> S0和S1同时只有一个区域被使用
+
+### 对象分配过程
+
+> Eden满了会触发Minor GC
+>
+> Survivor满了不会触发Minor GC
+
+![image-20230911134337251](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230911134337251.png)
+
+1. 对象创建在`Eden`中
+2. 当`Eden`满了, 进行`Minor GC`
+3. `Eden`中销毁不使用的对象
+4. 将`Eden`中依然使用的对象放入`Survivor0`中
+5. `Survivor0`中的对象添加一个`年龄计数器`
+
+![image-20230911134731281](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230911134731281.png)
+
+6. 当`Eden`又满了, 进行`Minor GC`
+7. `Eden`和`Survivor`中销毁不使用的对象
+8. 将`Eden`中依然使用的对象放入`Survivor1`中
+9. 将`Survivor0`中依然使用的对象放入`Survivor1`中
+10. 指定`Survivor1`中对象的年龄计数器
+
+![image-20230911135235652](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230911135235652.png)
+
+11. 当`Survivor`中对象的计数器达到`阈值`, 将对象晋升到`老年代`中
+    + 阈值默认15 , 通过 -XX:MaxTenuringThreshold=<N> 进行设置
+
+********
+
+![image-20230911140054165](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230911140054165.png)
+
+### Minor GC / Major GC / Full GC
+
+> 关于垃圾回收: 频繁发生在`新生代`, 很少发生在`养老区`, 几乎不在`元空间`
+
++ Minor/Yong GC
+  + 对于新生代(Eden / Survivor)内存的GC
++ Major GC
+  + 对于老年代的垃圾回收
++ Full GC
+  + 对整个堆和方法区的垃圾回收
+
+#### Minor/Yong GC
+
+`Eden`满了就会触发`Minor GC`, `Survivor`满了不会触发`Minor GC`
+
+`Minor GC`非常频繁, 一般回收速度也很快
+
+`Minor GC`会引发`STW`, 暂停其他用户线程, 等GC结束, 用户线程才能恢复
+
+#### Major GC
+
+出现`Major GC`, 经常会伴随至少一次的`Minor GC`. 当老年代空间不足时, 先尝试`Minor GC`, 再尝试`Major GC`
+
+`Major GC`时间一般比`Minor GC`慢10倍以上, `STW`的时间更长
+
+如果`Major GC`后, 内存还不足, 就`OOM`了
+
+#### Full GC
+
+调用`System.gc()`, 系统建议执行`Full GC`, 但不是必然执行
+
+老年代空间不足会触发
+
+方法区空间不足会触发
+
+#### 堆的空间分代思想
+
+> 分代的唯一理由就是`优化GC性能`, 经研究70%-99%的对象时临时对象
+
+![image-20230911153618884](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230911153618884.png)
+
+![image-20230911153740498](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230911153740498.png)
+
+### 内存分配策略
+
+优先分配到`Eden`
+
+`大对象`直接分配到`老年代`
+
++ 大对象大于`Eden`总容量也大于`Survivor`总容量, 直接进入`老年代`
+
+`Survivor`中年龄大于`阈值`的对象进入`老年代`
+
++ `Survivor`中的对象每经过一次`Minor GC`, 则`年龄加1`
+
+动态年龄判断:
+
++ 如果`Survivor`中相同年龄的所有对象的总和大于`Survivor`空间的一半
++ 年龄大于等于该年龄的对象可以直接进入`老年代`
+
+#### 分配内存: TLAB(Thread Local Allocation Buffer)
+
+**为什么要有TLAB**
+
+堆区是线程共享区域, 任何线程都可以放到到堆区的共享数据
+
+为避免多个线程操作同一地址, 需要使用加锁机制, 进而影响分配速度
+
+**什么是TLAB**
+
+从内存模型的角度, 对`Eden`进行划分, JVM对每个线程分配了一个私有缓存区域
+
+多线程分配内存是, 使用`TLAB`可以避免一系列的`非线程安全`问题 `(快速分配策略)`
+
+
+
+![image-20230911155207049](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230911155207049.png)
+
+JVM将TLAB是内存分配的首选
+
+可通过`-XX:UseTLAB` 进行开启, 默认开启
+
+默认`TLAB`空间内存很小, 只占整个`Eden`空间的`1%`, 可通过-XX:TLABWasteTargetPercent
+
+若在`TLAB`分配内存失败, JVM会尝试通过`加锁机制`确保数据操作的原子性, 直接在Eden中分配内容
+
+![image-20230911155804515](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230911155804515.png)
+
+#### 逃逸分析
+
+1. 当一个对象在方法中被定义后, 对象只在方法内使用, 则没有发生逃逸
+2. 当一个对象在方法中被定义后, 它被外部方法所引用, 则认为发生了逃逸
+
+> 是否逃逸和是否线程安全是一致的
+
+> 将堆上的对象分配到栈, 需要使用逃逸分析手段(`JVM目前没采用`)
+
+##### 标量替换
+
+经过逃逸分析, 发现一个对象不会被外界访问, 经过JIT优化, 会将对象拆分为若干个成员变量来替代
+
+![image-20230911165800705](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230911165800705.png)
+
+等价于 --->
+
+![image-20230911165844753](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230911165844753.png)
+
+## 方法区 Method Area
+
+逻辑上方法区是堆的一部分, 但对于HotSpotJVM而言, 方法区还有一个别名`非堆`
+
+实际上可以将方法区看做独立于堆的一个区域
+
+方法区主要用于存储`类信息`
+
+元空间是方法区的落地实现
+
+### 栈 & 堆 & 方法区的关系
+
+![image-20230911170533378](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230911170533378.png)
+
+### 方法区大小及OOM
+
+默认是动态调整的, 使用物理内存不使用虚拟机内存
+
+通过-XX:MetaspaceSize=21m 来设置方法区的初始值带下
+
+通过-XX:MaxMetaspaceSize=100m 来设置方法区的最大值, 默认无上限
+
+> 一般设置MetaspaceSize给一个高值, 避免频繁GC, 一般不设置MaxMetaspaceSize
+
+### 方法区内部机构
+
+### 方法区GC
+
+### 案例
+
