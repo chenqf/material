@@ -14,6 +14,7 @@ public class StockController {
 
     @GetMapping("/num")
     public Result stock(){
+        System.out.println("--------- Stock");
         return Result.success(10);
     }
 }

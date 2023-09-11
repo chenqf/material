@@ -2,29 +2,58 @@ server:
   port: 8001
 spring:
   application:
-    name: spring-cloud-alibaba-user # 应用名称, nacos会将名称当做服务名称
+    # 应用名称, nacos会将名称当做服务名称
+    name: spring-cloud-alibaba-user
   cloud:
     nacos:
       server-addr: 127.0.0.1:8848
       discovery:
         username: nacos
         password: nacos
-        namespace: adb6f806-e08a-41c0-9160-f63d6ac6a732 # 命名空间, 主要用于区分环境 dev/sit/prev/prod
-        group: material # 组名称, 一般用于区分项目
-    sentinel:
-      transport:
-        dashboard: 127.0.0.1:8858
-      web-context-unify: false # 默认true调用链路收敛, false将调用链路展开
-logging:
-  level:
-    com.maple.user.feign: debug # 指定该路径下的日志界别为debug----本地开发时配置
-feign:
-  client:
-    config:
-      spring-cloud-alibaba-stock: # 被调用服务在nacos中注册的应用名
-        # 日志级别
-        logger-level: FULL
-        # 连接超时时间 默认 2s
-        connect-timeout: 5000
-        # 请求处理超时时间 默认5s
-        read-timeout: 10000
+        # 命名空间, 主要用于区分环境 dev/sit/prev/prod
+        namespace: adb6f806-e08a-41c0-9160-f63d6ac6a732
+        # 组名称, 一般用于区分项目
+        group: material
+        cluster-name: BJ
+    loadbalancer:
+      cache:
+        # 启用本地缓存, 根据实际情况权衡
+        enabled: true
+        # 缓存空间大小
+        capacity: 1000
+        # 缓存的存活时间, 单位s
+        ttl: 10
+      health-check:
+        # 重新运行运行状况检查计划程序的时间间隔
+        interval: 25s
+        # 运行状况检查计划程序的初始延迟值
+        initial-delay: 30
+      # 需要引入Spring Retry依赖
+      retry:
+        # 该参数用来开启重试机制，默认是关闭
+        enabled: true
+        # 切换实例的重试次数
+        max-retries-on-next-service-instance: 2
+        # 对当前实例重试的次数
+        max-retries-on-same-service-instance: 0
+        # 对所有的操作请求都进行重试
+        retry-on-all-operations: true
+        # Http响应码进行重试
+        retryable-status-codes: 500,404,502,503
+#    sentinel:
+#      transport:
+#        dashboard: 127.0.0.1:8858
+#      web-context-unify: false # 默认true调用链路收敛, false将调用链路展开
+#logging:
+#  level:
+#    com.maple.user.feign: debug # 指定该路径下的日志界别为debug----本地开发时配置
+#feign:
+#  client:
+#    config:
+#      spring-cloud-alibaba-stock: # 被调用服务在nacos中注册的应用名
+#        # 日志级别
+#        logger-level: FULL
+#        # 连接超时时间 默认 2s
+#        connect-timeout: 5000
+#        # 请求处理超时时间 默认5s
+#        read-timeout: 10000

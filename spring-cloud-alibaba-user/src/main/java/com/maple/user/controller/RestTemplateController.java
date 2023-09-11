@@ -19,8 +19,10 @@ public class RestTemplateController {
 
     @GetMapping("/stock")
     public Result demo(){
+        System.out.println("尝试请求stock");
         // spring-cloud-alibaba-stock 为其他微服务在nacos中注册的应用名
-        Result<Integer> r = this.template.getForObject("http://spring-cloud-alibaba-stock/stock/num", Result.class);
+        String url = "http://spring-cloud-alibaba-stock/stock/num";
+        Result<Integer> r = this.template.getForObject(url, Result.class);
         return Result.success("user:chenqf;stock:" + r.getData());
     }
 }

@@ -19,7 +19,7 @@ export NACOS_DOCKER_NAME_PREFIX=nacos
 export MYSQL_BASE_DIR=/docker/mysql/nacos
 export NACOS_SQL_URL=https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/config/nacos-2.2.0-mysql-schema.sql
 export NACOS_VERSION=v2.2.0
-export NACOS_SERVER_NUM=3
+export NACOS_SERVER_NUM=1
 export NACOS_AUTH_IDENTITY_KEY=3c6e0b8a9c15224a8228b9a98ca1531d
 export NACOS_AUTH_IDENTITY_VALUE=2063c1608d6e0baf80249c42e2be5804
 export NACOS_AUTH_TOKEN=94a08da1fecbb6e8b46990538c7b50b2
@@ -143,6 +143,7 @@ for ((j=1; j<=$NACOS_SERVER_NUM; j++)); do
     docker run --name $NACOS_DOCKER_NAME_PREFIX$j --restart=always \
     --hostname=$NACOS_DOCKER_NAME_PREFIX$j \
     --network $NET_NAME \
+    -p8848:8848 \
     -e MODE=$MODE \
     -e PREFER_HOST_MODE=hostname \
     -e NACOS_SERVERS="$NACOS_SERVERS" \

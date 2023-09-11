@@ -14,11 +14,33 @@
 2. 将nacos连接到mysql做数据持久化
 3. 使用nginx或HaProxy做负载均衡器
 
+`TODO` Docker下部署:
+
 **访问nacos管理界面**:
 
 http://{hostname}:8848/nacos
 
 登录 ，用户名和密码都是nacos
+
+## Nacos逻辑隔离
+
+![](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230707214600578.png)
+
+**命名空间(Namespace) :** 用于进行租户粒度的隔离，Namespace 的常用场景之一是不同环境 的隔离
+
+**服务分组(Group) :** 不同的服务可以归类到同一分组，一般用于区分不同的项目
+
+## 临时实例和持久化实例
+
+在定义上区分临时实例和持久化 实例的关键是健康检查的方式。
+
+临时实例使用客户端上报模式， 而持久化实例使用服务端反向探测模式。
+
+临时实例需要能够自动摘除不健康实例，而且无需持久化存储实例。
+
+持久化实例使用服务端探测的健康检查方式，因为客户端不会上报心跳，所以不能自动摘除下线的实例。
+
+> ⼀些基础的组件例如数据库、缓存等，这些往往 不能上报心跳，这种类型的服务在注册时，就需要作为持久化实例注册
 
 ## 注册中心
 
@@ -52,14 +74,12 @@ http://{hostname}:8848/nacos
     <groupId>com.alibaba.cloud</groupId>
     <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
 </dependency>
-<!--  nacos 不再自带Ribbon,须单独引用springCloudLoadbalancer -->
-<dependency>
-    <groupId>org.springframework.cloud</groupId>
-    <artifactId>spring-cloud-starter-loadbalancer</artifactId>
-</dependency>
 ```
 
 #### 配置 application.yml
+
+更多配置： https://github.com/alibaba/spring-cloud-alibaba/wiki/Nacos-discovery
+
 ```yaml
 server:
   port: 8001
@@ -76,12 +96,65 @@ spring:
         group: material # 组名称, 一般用于区分项目
 ```
 
+### 整合RestTemplate+Spring Cloud LoadBalancer实现微服务调用
+
+```xml
+<!--  nacos 不再自带Ribbon,须单独引用springCloudLoadbalancer -->
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+</dependency>
+<!--  spring-retry 用于服务间调用异常重试  -->
+<dependency>
+    <groupId>org.springframework.retry</groupId>
+    <artifactId>spring-retry</artifactId>
+</dependency>
+```
+
+```yaml
+spring:
+  cloud:
+    nacos:
+      server-addr: 127.0.0.1:8848
+      discovery:
+        username: nacos
+        password: nacos
+        # 命名空间, 主要用于区分环境 dev/sit/prev/prod
+        namespace: adb6f806-e08a-41c0-9160-f63d6ac6a732
+        # 组名称, 一般用于区分项目
+        group: material
+    loadbalancer:
+      cache:
+        # 启用本地缓存, 根据实际情况权衡
+        enabled: true
+        # 缓存空间大小
+        capacity: 1000
+        # 缓存的存活时间, 单位s
+        ttl: 10
+      health-check:
+        # 重新运行运行状况检查计划程序的时间间隔
+        interval: 25s
+        # 运行状况检查计划程序的初始延迟值
+        initial-delay: 30
+      # 需要引入Spring Retry依赖
+      retry:
+        # 该参数用来开启重试机制，默认是关闭
+        enabled: true
+        # 切换实例的重试次数
+        max-retries-on-next-service-instance: 2
+        # 对当前实例重试的次数
+        max-retries-on-same-service-instance: 0
+        # 对所有的操作请求都进行重试
+        retry-on-all-operations: true
+        # Http响应码进行重试
+        retryable-status-codes: 500,404,502,503
+```
+
 #### 使用RestTemplate
 
 ```java
 @Configuration
-public class RestTemplateConfiguration {
-
+public class RestConfig {
     @LoadBalanced
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder){
@@ -95,13 +168,64 @@ public class RestTemplateConfiguration {
 public class RestTemplateController {
 
     @Autowired
-    RestTemplate restTemplate;
+    private RestTemplate template;
 
     @GetMapping("/stock")
     public Result demo(){
+        System.out.println("尝试请求stock");
         // spring-cloud-alibaba-stock 为其他微服务在nacos中注册的应用名
-        Result<Integer> r = this.restTemplate.getForObject("http://spring-cloud-alibaba-stock/stock/num", Result.class);
+        String url = "http://spring-cloud-alibaba-stock/stock/num";
+        Result<Integer> r = this.template.getForObject(url, Result.class);
         return Result.success("user:chenqf;stock:" + r.getData());
+    }
+}
+```
+
+### 服务分级存储
+
+注册中心的核心数据是服务的名字和它对应的网络地址
+
+![image-20230911194830370](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230911194830370.png)
+
+对于服务实例, 可能存在多机房部署的, 那么可能需要对每个机 房的实例做不同的配置，这样又需要在服务和实例之间再设定⼀个数据级别
+
+![image-20230911195449193](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230911195449193.png)
+
+**集群配置:**
+
+```properties
+spring.cloud.nacos.discovery.cluster-name=BJ
+```
+
+**自定义LoadBalancer配置机制实现优先同集群间调用**
+
+```java
+public class LoadBalancerConfig {
+    @Bean
+    ReactorLoadBalancer<ServiceInstance> randomLoadBalancer(
+            Environment environment,
+            LoadBalancerClientFactory loadBalancerClientFactory,
+            NacosDiscoveryProperties nacosDiscoveryProperties) {
+
+        String name = environment.getProperty(LoadBalancerClientFactory.PROPERTY_NAME);
+
+        return new NacosLoadBalancer(
+                loadBalancerClientFactory.getLazyProvider(name, ServiceInstanceListSupplier.class),
+                name,
+                nacosDiscoveryProperties
+        );
+    }
+}
+```
+
+**指定@LoadBalancerClient, 并指定对哪个服务使用**
+
+```java
+@SpringBootApplication
+@LoadBalancerClient(value = "stock-service", configuration = LoadBalancerConfig.class)
+public class UserApplication {
+    public static void main(String[] args) {
+        ConfigurableApplicationContext applicationContext = SpringApplication.run(UserApplication.class, args);
     }
 }
 ```
@@ -197,7 +321,7 @@ public class FeignConfiguration {
 ```
 
 ## 配置中心
-![](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230707214600578.png)
+
 
 #### 依赖 pom.xml
 ```xml

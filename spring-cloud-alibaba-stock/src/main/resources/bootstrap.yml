@@ -1,16 +1,16 @@
-spring:
-  application:
-    # 会自动的根据服务名拉去对应dataId名的配置文件
-    name: spring-cloud-alibaba-stock
-  cloud:
-    nacos:
-      server-addr: 127.0.0.1:8848
-      username: nacos
-      password: nacos
-      config:
-        namespace: adb6f806-e08a-41c0-9160-f63d6ac6a732 # 命名空间, 用于区分环境
-        file-extension: yaml # 默认为 Properties
-        shared-configs:
-          - data-id: com.maple.material.common.yaml  # 配置文件名
-            refresh: true # 实时更新
-        group: material # 组名称, 一般用于区分项目
+#spring:
+#  application:
+#    # 会自动的根据服务名拉去对应dataId名的配置文件
+#    name: spring-cloud-alibaba-stock
+#  cloud:
+#    nacos:
+#      server-addr: 127.0.0.1:8848
+#      username: nacos
+#      password: nacos
+#      config:
+#        namespace: adb6f806-e08a-41c0-9160-f63d6ac6a732 # 命名空间, 用于区分环境
+#        file-extension: yaml # 默认为 Properties
+#        shared-configs:
+#          - data-id: com.maple.material.common.yaml  # 配置文件名
+#            refresh: true # 实时更新
+#        group: material # 组名称, 一般用于区分项目
