@@ -57,3 +57,9 @@ spring:
 #        connect-timeout: 5000
 #        # 请求处理超时时间 默认5s
 #        read-timeout: 10000
+feign:
+  client:
+    config:
+      default:
+        logger-level: FULL
+

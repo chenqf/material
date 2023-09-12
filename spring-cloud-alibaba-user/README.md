@@ -232,6 +232,28 @@ public class UserApplication {
 
 ## nacos注册中心结合OpenFeign
 
+返回值一定相同
+方法名随意
+参数: 用对应的注解, 参数前如果没有注解, 默认添加@RequestBody, 最多只能存在一个不带注解的参数
+
+超时时间, 负载均衡也配置了, 以openFeign为准
+okHttpClient 使用transparent 压缩, 不需要开启Gzip 
+
+class R extend HashMap<String,Object>
+
+@SpringQueryMap
+
+
+
+优化: 
+
+
+
+![image-20230912114103556](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230912114103556.png)
+
+
+
+
 #### 依赖 pom.xml
 
 ```xml
