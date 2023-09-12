@@ -528,7 +528,64 @@ JVM将TLAB是内存分配的首选
 
 ### 方法区内部机构
 
+![image-20230912090940589](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230912090940589.png)
+
+**方法区主要存放:**
+
++ 类型信息(class / interface / enum / annotation)
++ 类属性信息(域信息)
++ 类方法信息
++ 常量
++ 静态变量
++ JIT编译后的代码缓存
+
+**以下代码不会报错:**
+
+```java
+public class MethodTest {
+
+    public static void main(String[] args) {
+        User user = null;
+        user.hello(); // hello!
+        System.out.println(user.count); // 2
+        System.out.println(user.num); // 3
+    }
+}
+class User{
+    public static int count = 2;
+    public final static int num = 3;
+
+    public static void hello(){
+        System.out.println("hello!");
+    }
+}
+```
+
+类静态常量的赋值, 是在编译器就赋值了
+
+类普通常量的赋值, 是在类加载的过程中进行了赋值
+
+#### 运行时常量池
+
+`字节码文件`, 内部包含了`常量池`, 包含各种字面量和对类型、字段和方法的符号引用
+
+`运行时常量池`是`方法区`的一部分, 维护的信息就是`字节码文件`中的`常量池`
+
+JVM会对`每一个类和接口`定义一个`运行时常量池`
+
 ### 方法区GC
 
-### 案例
+规范上说明, 方法区可以不进行GC , 一般来说, 这个区域的回收效果比较差
 
+主要回收2部分:
+
++ 废弃的常量
++ 不再使用的类型
+
+## 总结
+
+![image-20230912135125752](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230912135125752.png)
+
+![image-20230912135213880](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230912135213880.png)
+
+![image-20230912135222913](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230912135222913.png)
