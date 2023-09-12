@@ -46,7 +46,20 @@
 + 字段校验
 + spring bean 声明周期
 + 好好研究一下多态
++ GC Roots 可达性分析      
++ OAuth2
 
 架构师每天都在想什么:
 + 如何让系统更快
 + 避免系统出现瓶颈 
+
++ 软件授权方案
++ 不可逆加密 https://www.bilibili.com/video/BV1sY411F79J/?spm_id_from=333.337.search-card.all.click&vd_source=0494972cf815a7a4a8ac831a4c0a1229
+  + MD5 
+  + SHA-256 - 性能更好一些
++ 可逆加密
+  + 对称加密
+    + DES
+    + AES
+  + 非对称加密
+    + RSA - 计算量比较大
