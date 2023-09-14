@@ -48,6 +48,8 @@
 + 好好研究一下多态
 + GC Roots 可达性分析      
 + OAuth2
++ Spring Boot Actuator 端点开放
+  + management.endpoints.web.exposure.include='*'
 
 架构师每天都在想什么:
 + 如何让系统更快

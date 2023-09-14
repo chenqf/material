@@ -504,8 +504,24 @@ feign:
 
 ## 配置中心
 
+在微服务架构中，当系统从一个单体应用，被拆分成分布式系统上一个个服务节点后，配置文件也必 须跟着迁移（分割），这样配置就分散了，不仅如此，分散中还包含着冗余。
+
+`配置中心就是一种统一管理各种应用配置的基础服务组件`
+
+![image-20230914171803042](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230914171803042.png)
+
+**配置中心架构**
+
+![image-20230914171845538](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230914171845538.png)
+
+**应用场景**
+
+![image-20230914171908012](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230914171908012.png)
+
+### 微服务整合Nacos配置中心
 
 #### 依赖 pom.xml
+
 ```xml
 <!--   nacos 配置中心     -->
 <dependency>
@@ -519,7 +535,10 @@ feign:
 </dependency>
 ```
 
-#### bootstrap.yml 须新建
+> Spring Cloud2020之后，默认没有使用bootstarp的依赖，重新引入spring-cloud-starterbootstarp的依赖即可解决
+
+#### 创建bootstrap.yml文件，配置nacos配置中心的地址
+
 ```yaml
 spring:
   application:
@@ -529,15 +548,40 @@ spring:
     nacos:
       server-addr: 127.0.0.1:8848
       username: nacos
-      password: nacos
+      password: nacos    
       config:
-        namespace: adb6f806-e08a-41c0-9160-f63d6ac6a732 # 命名空间, 用于区分环境
-        file-extension: yaml # 默认为 Properties
-        shared-configs:
-          - data-id: com.maple.material.common.yaml  # 配置文件名
-            refresh: true # 实时更新
-        group: material # 组名称, 一般用于区分项目
+      	# 命名空间, 用于区分环境
+        namespace: adb6f806-e08a-41c0-9160-f63d6ac6a732 
+        # 默认为 Properties
+        file-extension: yaml 
+        # 组名称, 一般用于区分项目
+        group: material 
 ```
+
+### 常用配置说明
+
+![image-20230914172219768](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230914172219768.png)
+
+##### 支持profile粒度的配置
+
+`nacos-config` 在加载配置的时候, 会自动加载`nacos-config`中的以下文件
+
++ ${spring.application.name}.${file-extension:properties}
++ ${spring.application.name}-${profile}.${file-extension:properties} 
+
+在日常开发中如 果遇到多套环境下的不同配置，可以通过Spring 提供的 `${spring.profiles.active}` 这个配置项来配置
+
+```properties
+spring.profiles.active=dev
+```
+
+##### 自定义 namespace 的配置
+
+用于进行租户粒度的配置隔离。不同的命名空间下，可以存在相同的 Group 或 Data ID 的配置。
+
+`Namespace` 的常用场景之一是`不同环境`的配置的区分隔离，例如`开发测试环境`和`生产环境`的资源隔离等
+
+未指定`Namespace`, 默认使用的是Public这个Namespace
 
 #### 通过 nacos dashboard 创建 data-id
 
