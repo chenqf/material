@@ -44,22 +44,40 @@ spring:
 #      transport:
 #        dashboard: 127.0.0.1:8858
 #      web-context-unify: false # 默认true调用链路收敛, false将调用链路展开
-#logging:
-#  level:
-#    com.maple.user.feign: debug # 指定该路径下的日志界别为debug----本地开发时配置
-#feign:
-#  client:
-#    config:
-#      spring-cloud-alibaba-stock: # 被调用服务在nacos中注册的应用名
-#        # 日志级别
-#        logger-level: FULL
-#        # 连接超时时间 默认 2s
-#        connect-timeout: 5000
-#        # 请求处理超时时间 默认5s
-#        read-timeout: 10000
+
+
 feign:
+  okhttp:
+    enabled: true
+  httpclient:
+    hc5:
+      enabled: false
+  compression:
+    request:
+      enabled: true
+      mime-types: text/xml,application/xml,application/json
+      # 最小请求压缩阈值
+      min-request-size: 2048
+    response:
+      enabled: true
   client:
     config:
+      # 所有服务生效
       default:
         logger-level: FULL
-
+        # 连接超时时间
+        connect-timeout: 3000
+        # 请求处理超时时间
+        read-timeout: 5000
+        request-interceptors:
+          - com.maple.user.interceptor.FeignAuthRequestInterceptor
+      # 针对单个微服务进行配置
+      other-micro:
+        logger-level: FULL
+        # 连接超时时间
+        connect-timeout: 3000
+        # 请求处理超时时间
+        read-timeout: 5000
+logging:
+  level:
+    com.maple.user.feign: debug # 指定该路径下的日志界别为debug

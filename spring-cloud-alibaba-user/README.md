@@ -230,50 +230,41 @@ public class UserApplication {
 }
 ```
 
-## nacos注册中心结合OpenFeign
+> 该算法也支持整合后的OpenFeign
 
-返回值一定相同
-方法名随意
-参数: 用对应的注解, 参数前如果没有注解, 默认添加@RequestBody, 最多只能存在一个不带注解的参数
+## Nacos注册中心结合OpenFeign
 
-超时时间, 负载均衡也配置了, 以openFeign为准
-okHttpClient 使用transparent 压缩, 不需要开启Gzip 
+Feign是Netflix开发的声明式、模板化的HTTP客户端，Feign可帮助我们更加便捷、优雅地调用HTTP API。
 
-class R extend HashMap<String,Object>
+Feign可以做到使用 HTTP 请求远程服务时就像调用本地方法一样的体验，开发者完全感知不到 这是远程方法，更感知不到这是个 HTTP 请求。
 
-@SpringQueryMap
+Spring Cloud OpenFeign对Feign进行了增强，使其支持Spring MVC注解，从而使得Feign的使用更加方便。
 
+![image-20230914122443180](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230914122443180.png)
 
-
-优化: 
-
-
-
-![image-20230912114103556](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230912114103556.png)
-
-
-
-
-#### 依赖 pom.xml
+**引入依赖：**
 
 ```xml
-<!--  openFeign  -->
 <dependency>
     <groupId>org.springframework.cloud</groupId>
     <artifactId>spring-cloud-starter-openfeign</artifactId>
 </dependency>
 ```
-#### 使用
+
+**添加@EnableFeignClients注解，开启openFeign功能：**
 
 ```java
 @SpringBootApplication
-@EnableFeignClients // 开启Feign
+@EnableFeignClients
 public class UserApplication {
     public static void main(String[] args) {
         ConfigurableApplicationContext applicationContext = SpringApplication.run(UserApplication.class, args);
     }
 }
 ```
+
+**编写OpenFeign客户端：**
+
 ```java
 @FeignClient(name = "spring-cloud-alibaba-stock",path = "/stock")
 public interface StockFeignService { // 该接口无需实现, 但方法返回值类型,注解,方法名要和被调用的服务controller一致
@@ -281,13 +272,22 @@ public interface StockFeignService { // 该接口无需实现, 但方法返回�
     Result<Integer> stock();
 }
 ```
+
++ 返回值确保和被调用Controller中的返回值相同
++ 方法名随意
++ 参数: 使用对应的注解
+  + 参数前如果没有注解, 默认添加@RequestBody, 最多只能存在一个不带注解的参数
+  + @SpringQueryMap 用于接收多个query参数
+
+**微服务调用者发起调用，像调用本地方式一样调用远程微服务提供者：**
+
 ```java
 @RequestMapping("/feign")
 @RestController
 public class FeignController {
 
     @Autowired
-    StockFeignService stockFeignService;
+    private StockFeignService stockFeignService;
 
     @GetMapping("/stock")
     public Result demo(){
@@ -296,50 +296,210 @@ public class FeignController {
     }
 }
 ```
-### Feign 配置
-```yaml
-logging:
-  level:
-    com.maple.user.feign: debug # 指定该路径下的日志界别为debug----本地开发时配置
-feign:
-  client:
-    config:
-      spring-cloud-alibaba-user: # 被调用服务在nacos中注册的应用名
-        # 日志级别 
-        logger-level: FULL
-        # 连接超时时间 默认 2s
-        connect-timeout: 5000
-        # 请求处理超时时间 默认5s
-        read-timeout: 10000
-```
 
-Feign日志级别:
-+ NONE - 性能最佳, 不记录任何日志
-+ BASIC - 适用于生产追踪问题 , 仅记录请求方法/url/状态码/执行时间
-+ HEADERS - 记录请求和响应的header
-+ FULL - 适用于开发测试环境, 记录请求和响应的header/body/元数据
+### OpenFeign扩展优化
 
-### Feign 拦截器
+### 日志配置：
 
-> 主要用于隐式传递信息
++ NONE【性能最佳，默认值】：不记录任何日志。 
++ `BASIC【适用于生产环境追踪问题】`：仅记录请求方法、URL、响应状态代码以及执行时间。
++ HEADERS：记录BASIC级别的基础上，记录请求和响应的header。 
++ `FULL【比较适用于开发及测试环境定位问题】`：记录请求和响应的header、body和元数据。
+
+**方式一:**
 
 ```java
 @Configuration
 public class FeignConfiguration {
-    Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Bean
-    public RequestInterceptor requestInterceptor(){
-        return new RequestInterceptor(){
-            @Override
-            public void apply(RequestTemplate requestTemplate) {
-                requestTemplate.header("name","value");
-                requestTemplate.query("id","11");
-                logger.info("feign 拦截器!");
-            }
-        };
+    public Logger.Level feignLoggerLevel(){
+        return Logger.Level.BASIC;
     }
 }
+```
+
+openFeign的输入日志是debug的, 所以要修改对应包下的日志输入级别
+
+```yaml
+logging:
+  level:
+    com.maple.user.feign: debug # 指定该路径下的日志界别为debug
+```
+
+**方式二(优先级更高-建议使用):**
+
+```yaml
+feign:
+  client:
+    config:
+      default: # 所有服务生效
+        logger-level: FULL
+      other-micro: # 针对单个微服务进行配置
+        logger-level: FULL
+logging:
+  level:
+    com.maple.user.feign: debug # 指定该路径下的日志界别为debug
+```
+
+### 超时时间配置
+
+**方式一:**
+
+```java
+@Configuration
+public class FeignConfiguration {
+    @Bean
+    public Request.Options options(){
+        // connectTimeout : 连接超时时间
+        // readTimeout : 连接建立后响应超时时间
+        return new Request.Options(3000, TimeUnit.MILLISECONDS, 5000, TimeUnit.MILLISECONDS,true);
+    }
+}
+```
+
+****方式二(优先级更高-建议使用):****
+
+```yaml
+feign:
+  client:
+    config:
+      default: # 所有服务生效
+        # 连接超时时间
+        connect-timeout: 3000
+        # 请求处理超时时间
+        read-timeout: 5000
+      other-micro: # 针对单个微服务进行配置
+        # 连接超时时间
+        connect-timeout: 3000
+        # 请求处理超时时间
+        read-timeout: 5000
+```
+
+> Feign的底层用的是Ribbon或者LoadBalancer，但超时时间以Feign配置为准
+
+### 替换HTTP请求组件
+
+Feign 中默认使用 JDK 原生的 URLConnection 发送 HTTP 请求，没有连接池，我们可以集成别的组件来替换掉 URLConnection，比如 Apache HttpClient5，OkHttp。
+
+> Feign发起调用真正执行逻辑：feign.Client#execute
+
+**配置Apache HttpClient5**
+
+```xml
+<dependency>
+    <groupId>io.github.openfeign</groupId>
+    <artifactId>feign-hc5</artifactId>
+</dependency>
+```
+
+```yaml
+feign:
+  httpclient:
+    hc5:
+      enabled: false
+```
+
+> 关于配置可参考源码：`org.springframework.cloud.openfeign.FeignAutoConfiguration`
+
+> 调用会进入`feign.hc5.ApacheHttp5Client`#execute
+
+**配置OkHttp**
+
+```xml
+<dependency>
+    <groupId>io.github.openfeign</groupId>
+    <artifactId>feign-okhttp</artifactId>
+</dependency>
+```
+
+```yaml
+feign:
+  okhttp:
+    enabled: true
+```
+
+> 关于配置可参考源码： `org.springframework.cloud.openfeign.FeignAutoConfiguration`
+
+> 调用会进入`feign.okhttp.OkHttpClient`#execute
+
+**配置Gzip压缩**
+
+```yaml
+feign:
+  compression:
+    request:
+      enabled: true
+      mime-types: text/xml,application/xml,application/json
+      # 最小请求压缩阈值
+      min-request-size: 1024 
+    response:
+      enabled: true
+```
+
+> 当 Feign 的 HttpClient不是 okHttp的时候，压缩配置不会生效
+
+> 配置源码在 `FeignAcceptGzipEncodingAutoConfiguration`
+
+### 拦截器
+
+通过拦截器实现参数传递, 扩展点:`feign.RequestInterceptor` 常见应用场景:
+
++ 链路追踪
++ 权限认证
++ 分布式事务
++ 等
+
+**定义拦截器实现传递Trace-Id:**
+
+```java
+public class FeignAuthRequestInterceptor implements RequestInterceptor {
+    @Override
+    public void apply(RequestTemplate template) {
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if(null != attributes){
+            HttpServletRequest request = attributes.getRequest();
+            String traceId = request.getHeader("Trace-Id");
+            template.header("Trace-Id",traceId);
+        }
+    }
+}
+```
+
+**全局配置拦截器 - 方式一:**
+
+```java
+@Configuration
+public class FeignConfiguration {
+    @Bean
+    public RequestInterceptor requestInterceptor() {
+        return new FeignAuthRequestInterceptor();
+    }
+}
+```
+
+**全局配置拦截器 - 方式二:**
+
+```yaml
+feign:
+  client:
+    config:
+      # 所有服务生效
+      default: 
+        request-interceptors:
+          - com.maple.user.interceptor.FeignAuthRequestInterceptor
+```
+
+**单独对某个服务配置拦截器:**
+
+```yaml
+feign:
+  client:
+    config:
+      # 针对单个微服务进行配置
+      other-micro: 
+        request-interceptors:
+          - com.maple.user.interceptor.FeignAuthRequestInterceptor
 ```
 
 ## 配置中心

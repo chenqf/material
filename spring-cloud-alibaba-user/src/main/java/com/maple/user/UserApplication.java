@@ -15,7 +15,7 @@ import org.springframework.context.annotation.ComponentScan;
  */
 @SpringBootApplication
 @EnableFeignClients
-@LoadBalancerClient(value = "stock-service", configuration = LoadBalancerConfig.class)
+@LoadBalancerClient(value = "spring-cloud-alibaba-stock", configuration = LoadBalancerConfig.class)
 public class UserApplication {
     public static void main(String[] args) {
         ConfigurableApplicationContext applicationContext = SpringApplication.run(UserApplication.class, args);
