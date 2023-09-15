@@ -556,6 +556,21 @@ spring:
         file-extension: yaml 
         # 组名称, 一般用于区分项目
         group: material 
+        #不同工程的通用配置 支持共享的 DataId
+        shared-configs:
+           # 配置文件名
+          - data-id: com.maple.material.common.yaml
+            # 组名称, 一般用于区分项目
+            group: material
+            # 实时更新
+            refresh: true
+        extension-configs:
+            # 配置文件名
+          - data-id: com.maple.material.user.yaml
+            # 组名称, 一般用于区分项目
+            group: material
+            # 实时更新
+            refresh: true
 ```
 
 ### 常用配置说明
@@ -583,11 +598,49 @@ spring.profiles.active=dev
 
 未指定`Namespace`, 默认使用的是Public这个Namespace
 
-#### 通过 nacos dashboard 创建 data-id
+##### 自定义 Group 的配置
 
-![](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230707182403844.png)
+在 Nacos 上创建一个配置时，如果未填写配置分组的名称，则配 置分组的名称默认采用 DEFAULT_GROUP
 
-### 使用 (@RefreshScope / @Value)
+一般使用Group配置不同项目
+
+##### 自定义扩展的 Data Id 配置
+
+Data ID 通常采用类 Java 包（如 com.taobao.tc.refund.log.level）的命名规则保证全局唯一性
+
+### 配置优先级
+
+> 完整的配置优先级从高到低：
+
+1. `{spring.application.name}-${profile}.${file-extension} `
+2. `{spring.application.name}.${file-extension} `
+3. `${spring.application.name} `
+4. `extensionConfigs `
+5. `sharedConfigs`
+
+### 配置的动态刷新
+
+修改配置后, Nacos会发送事件给微服务客户端, 微服务客户端重新获取最新配置
+
+```java
+public class UserApplication {
+    public static void main(String[] args) throws InterruptedException {
+        ConfigurableApplicationContext applicationContext = SpringApplication.run(UserApplication.class, args);
+        String userAge = applicationContext.getEnvironment().getProperty("common.age");
+        while (true){
+            Thread.sleep(3000);
+            String property = applicationContext.getEnvironment().getProperty("common.age");
+            System.out.println(property);
+        }
+
+    }
+}
+```
+
+#### Bean的动态刷新
+
+在Bean上添加`@RefreshScope`, 当bean的属性发生变更后, bean会从容器中删除, 再次使用该bean时重新生成bean
+
 ```java
 @RefreshScope
 @RequestMapping("/nacos")
@@ -595,7 +648,7 @@ spring.profiles.active=dev
 public class NacosConfigController {
 
     @Value("${user.name}")
-    String name;
+    private String name;
 
     @GetMapping("/config")
     public Result demo(){
@@ -603,3 +656,39 @@ public class NacosConfigController {
     }
 }
 ```
+
+#### @RefreshScope 导致@Scheduled定时任务失效问题
+
+`@Scheduled`是在bean创建时声明, 由于属性变更导致bean销毁, 所以会出现问题
+
+**解决办法:**
+
+实现Spring事件监听器，监听 RefreshScopeRefreshedEvent事件，监听方法中进行一次定时方法的调用
+
+```java
+@RefreshScope
+@RequestMapping("/nacos")
+@RestController
+public class NacosConfigController implements ApplicationListener<RefreshScopeRefreshedEvent> {
+
+    @Value("${user.name}")
+    private String name;
+
+    @GetMapping("/config")
+    public Result demo(){
+        return Result.success(this.name);
+    }
+    
+    //触发@RefreshScope执行逻辑会导致@Scheduled定时任务失效
+    @Scheduled(cron = "*/3 * * * * ?") //定时任务每隔3s执行一次
+    public void execute() {
+        System.out.println("定时任务正常执行。。。。。。");
+    }
+
+    @Override
+    public void onApplicationEvent(RefreshScopeRefreshedEvent event) {
+        this.execute();
+    }
+}
+```
+

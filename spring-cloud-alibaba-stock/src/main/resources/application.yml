@@ -16,16 +16,16 @@ spring:
 #      transport:
 #        dashboard: 127.0.0.1:8858
 #      web-context-unify: false # 默认true调用链路收敛, false将调用链路展开
-#logging:
-#  level:
-#    com.maple.stock.feign: debug # 指定该路径下的日志界别为debug----本地开发时配置
-#feign:
-#  client:
-#    config:
-#      spring-cloud-alibaba-user: # 被调用服务在nacos中注册的应用名
-#        # 日志级别
-#        logger-level: FULL
-#        # 连接超时时间 默认 2s
-#        connect-timeout: 5000
-#        # 请求处理超时时间 默认5s
-#        read-timeout: 10000
+logging:
+  level:
+    com.maple.stock.feign: debug # 指定该路径下的日志界别为debug----本地开发时配置
+feign:
+  client:
+    config:
+      spring-cloud-alibaba-user: # 被调用服务在nacos中注册的应用名
+        # 日志级别
+        logger-level: FULL
+        # 连接超时时间 默认 2s
+        connect-timeout: 5000
+        # 请求处理超时时间 默认5s
+        read-timeout: 10000
