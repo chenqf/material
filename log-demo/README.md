@@ -453,8 +453,6 @@ output {
 
 ## Kibana 查看日志
 
-## TODO
-
 云原生 下使用 loki 收集日志 promtail
 
 ![image-20230901094259663](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230901094259663.png)
