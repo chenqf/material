@@ -177,24 +177,151 @@ DriverManager.getCallerClassLoader()
 
 自定义类加载器主要是`重写findClass`方法
 
+```java
+public class MyClassLoaderTest {
+
+    static class MyClassLoader extends ClassLoader{
+
+        private String classPath;
+
+        public MyClassLoader(String classPath) {
+            this.classPath = classPath;
+        }
 
 
-## 其他
+        private byte[] loadByte(String name) throws Exception {
+            name = name.replaceAll("\\.", "/");
+            FileInputStream fis = new FileInputStream(classPath + "/" + name + ".class");
+            int len = fis.available();
+            byte[] data = new byte[len];
+            fis.read(data);
+            fis.close();
+            return data;
+        }
 
-如何判断两个class对象是否是同一个类?
+        @Override
+        protected Class<?> findClass(String name) throws ClassNotFoundException {
+            try {
+                byte[] data = loadByte(name);
+                return defineClass(name, data, 0, data.length);
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new ClassNotFoundException();
+            }
+        }
+    }
 
-1. 类的完整类名必须一致, 包括包名
-2. 类的ClassLoader必须相同
+    public static void main(String[] args) throws Exception {
+        //初始化自定义类加载器，会先初始化父类ClassLoader，其中会把自定义类加载器的父加载器设置为应用程序类加载器AppClassLoader
+        MyClassLoader classLoader = new MyClassLoader("G:/");
+        //G盘创建 com/maple/jvm 目录，将User类的User.class丢入该目录
+        Class clazz = classLoader.loadClass("com.maple.jvm.User");
+        Object obj = clazz.newInstance();
+        Method method = clazz.getDeclaredMethod("sout", null);
+        method.invoke(obj, null);
+        System.out.println(clazz.getClassLoader().getClass().getName()); // sun.misc.Launcher$AppClassLoader
+    }
+}
+```
 
-> JVM必须知道一个类是`启动类加载器`加载的, 还是`用户类加载器`加载的
->
-> 如果是`用户类加载器`加载的, JVM会将这个`类加载器的一个引用`作为`类型信息`的一部分保存在`方法区`
+### 打破双亲委派
+
+`ClassLoad`中`loadClass(String, boolean)`，实现了双亲委派机制, 我们需要对`loadClass`进行重写
+
+```java
+public class MyClassLoaderTest {
+
+    static class MyClassLoader extends ClassLoader{
+
+        private String classPath;
+
+        public MyClassLoader(String classPath) {
+            this.classPath = classPath;
+        }
+
+
+        private byte[] loadByte(String name) throws Exception {
+            name = name.replaceAll("\\.", "/");
+            FileInputStream fis = new FileInputStream(classPath + "/" + name + ".class");
+            int len = fis.available();
+            byte[] data = new byte[len];
+            fis.read(data);
+            fis.close();
+            return data;
+        }
+
+        @Override
+        protected Class<?> findClass(String name) throws ClassNotFoundException {
+            try {
+                byte[] data = loadByte(name);
+                return defineClass(name, data, 0, data.length);
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new ClassNotFoundException();
+            }
+        }
+
+        @Override
+        protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+            synchronized (getClassLoadingLock(name)) {
+                // First, check if the class has already been loaded
+                Class<?> c = findLoadedClass(name);
+                if (c == null) {
+                    long t0 = System.nanoTime();
+                    long t1 = System.nanoTime();
+
+                    // 特殊包下的类打破双亲委派
+                    if(!name.startsWith("com.maple.jvm")){
+                        c = this.getParent().loadClass(name);
+                    }else {
+                        c = findClass(name);
+                    }
+
+                    // this is the defining class loader; record the stats
+                    sun.misc.PerfCounter.getParentDelegationTime().addTime(t1 - t0);
+                    sun.misc.PerfCounter.getFindClassTime().addElapsedTimeFrom(t1);
+                    sun.misc.PerfCounter.getFindClasses().increment();
+                }
+                if (resolve) {
+                    resolveClass(c);
+                }
+                return c;
+            }
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+        //初始化自定义类加载器，会先初始化父类ClassLoader，其中会把自定义类加载器的父加载器设置为应用程序类加载器AppClassLoader
+        MyClassLoader classLoader = new MyClassLoader("G:/");
+        //G盘创建 com/maple/jvm 目录，将User类的User.class丢入该目录
+        Class clazz = classLoader.loadClass("com.maple.jvm.User");
+        Object obj = clazz.newInstance();
+        Method method = clazz.getDeclaredMethod("sout", null);
+        method.invoke(obj, null);
+        System.out.println(clazz.getClassLoader().getClass().getName()); // com.maple.MyClassLoaderTest$MyClassLoader
+    }
+}
+```
+
+### Tomcat打破双亲委派
+
+一个web容器可能需要部署两个应用程序, 不同的应用程序可能会依赖同一个`三方类库的不同版本`
+
+如果使用默认的类加载器机制，那么是无法加载两个相同类库的不同版本的
+
+类加器是不管你是什么版本的，只在乎你的全限定类名，并且只有一份
+
+每个jsp文件对应一个唯一的类加载器
+
+![image-20230922173605491](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230922173605491.png)
+
+
 
 ****
 
-反编译解析二进制class文件:
+同一个JVM内，两个相同包名和类名的类对象可以共存，因为他们的类加载器可以不一 样
 
-```shell
-javap -v ./xxx.class
-```
+**如何判断两个class对象是否是同一个类?**
 
+1. 类的完整类名必须一致, 包括包名
+2. 类的ClassLoader必须相同
