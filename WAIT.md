@@ -54,6 +54,7 @@
  架构师每天都在想什么:
 + 如何让系统更快
 + 避免系统出现瓶颈 
++ 状态机
 
 + 软件授权方案
 + 不可逆加密 https://www.bilibili.com/video/BV1sY411F79J/?spm_id_from=333.337.search-card.all.click&vd_source=0494972cf815a7a4a8ac831a4c0a1229
