@@ -66,7 +66,7 @@
     + AES
   + 非对称加密
     + RSA - 计算量比较大
-
++ mysql  https://www.bilibili.com/video/BV1JG4y1Q7BX/?spm_id_from=333.337.search-card.all.click&vd_source=0494972cf815a7a4a8ac831a4c0a1229
 
 
 ## 中台

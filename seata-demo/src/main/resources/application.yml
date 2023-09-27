@@ -1,0 +1,18 @@
+server:
+  port: 8020
+spring:
+  application:
+    # 应用名称, nacos会将名称当做服务名称
+    name: seata-demo
+  cloud:
+    nacos:
+      server-addr: 127.0.0.1:8848
+      discovery:
+        username: nacos
+        password: nacos
+        # 命名空间, 主要用于区分环境 dev/sit/prev/prod
+        namespace: adb6f806-e08a-41c0-9160-f63d6ac6a732
+        # 组名称, 一般用于区分项目
+        group: material
+
+

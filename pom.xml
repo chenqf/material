@@ -36,6 +36,7 @@
         <module>spring-demo</module>
         <module>jvm-demo</module>
         <module>encryption-demo</module>
+        <module>seata-demo</module>
     </modules>
     <name>material</name>
     <description>material</description>

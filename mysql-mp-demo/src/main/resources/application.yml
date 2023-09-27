@@ -4,7 +4,7 @@ spring:
   application:
     name: mysql-mp-demo
   datasource:
-    url: jdbc:mysql://${ENV_CLOUD_IP}:3306/demo?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
+    url: jdbc:mysql://${ENV_CLOUD_IP}:3306/standalone_transaction?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
     username: root
     password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
