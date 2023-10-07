@@ -1,4 +1,4 @@
-package com.maple.stock.exception;
+package com.maple.stock.config.exception;
 
 import com.alibaba.csp.sentinel.adapter.spring.webmvc.callback.BlockExceptionHandler;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
@@ -20,7 +20,7 @@ import javax.servlet.http.HttpServletResponse;
 /**
  * @author chenqf
  */
-@Component
+//@Component
 public class MyBlockExceptionHandler implements BlockExceptionHandler {
 
     private  final Logger logger = LoggerFactory.getLogger(MyBlockExceptionHandler.class);

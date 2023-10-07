@@ -1,18 +1,74 @@
 server:
   port: 8020
 spring:
+  main:
+    allow-bean-definition-overriding: true
   application:
     # 应用名称, nacos会将名称当做服务名称
     name: seata-demo
+  datasource:
+    url: jdbc:mysql://${ENV_CLOUD_IP}:3306/order?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    db1:
+      url: jdbc:mysql://${ENV_CLOUD_IP}:3306/distributed_transaction1?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
+      username: root
+      password: 123456
+      driver-class-name: com.mysql.cj.jdbc.Driver
+    db2:
+      url: jdbc:mysql://${ENV_CLOUD_IP}:3306/distributed_transaction2?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
+      username: root
+      password: 123456
+      driver-class-name: com.mysql.cj.jdbc.Driver
   cloud:
     nacos:
       server-addr: 127.0.0.1:8848
       discovery:
         username: nacos
         password: nacos
-        # 命名空间, 主要用于区分环境 dev/sit/prev/prod
-        namespace: adb6f806-e08a-41c0-9160-f63d6ac6a732
-        # 组名称, 一般用于区分项目
-        group: material
+        namespace: adb6f806-e08a-41c0-9160-f63d6ac6a732 # 命名空间, 主要用于区分环境 dev/sit/prev/prod
+        group: material # 组名称, 一般用于区分项目
+
+seata:
+  # 默认AT
+  data-source-proxy-mode: AT
+  application-id: ${spring.application.name}
+  # seata 服务分组，要与服务端配置service.vgroup_mapping的后缀对应
+  tx-service-group: default_tx_group
+  registry:
+    type: nacos
+    nacos:
+      application: seata-server
+      server-addr: 127.0.0.1:8848
+      namespace: adb6f806-e08a-41c0-9160-f63d6ac6a732
+      group: SEATA_GROUP
+  config:
+    type: nacos
+    nacos:
+      server-addr: 127.0.0.1:8848
+      namespace: adb6f806-e08a-41c0-9160-f63d6ac6a732
+      group: SEATA_GROUP
+      data-id: seataServer.properties
+
+logging:
+  level:
+    com.maple.seata.feign: debug # 指定该路径下的日志界别为debug----本地开发时配置
+feign:
+  client:
+    config:
+      spring-cloud-alibaba-stock: # 被调用服务在nacos中注册的应用名
+        # 日志级别
+        logger-level: FULL
+        # 连接超时时间 默认 2s
+        connect-timeout: 5000
+        # 请求处理超时时间 默认5s
+        read-timeout: 10000
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  #    default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler
+  # 配置类型别名对应的包
+  type-aliases-package: com.maple.seata.entity
 
 

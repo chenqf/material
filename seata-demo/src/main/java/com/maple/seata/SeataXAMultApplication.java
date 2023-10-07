@@ -14,8 +14,8 @@ import org.springframework.context.ConfigurableApplicationContext;
 @SpringBootApplication
 @EnableFeignClients
 @MapperScan("com.maple.seata.mapper")
-public class SeataApplication {
+public class SeataXAMultApplication {
     public static void main(String[] args) throws InterruptedException {
-        ConfigurableApplicationContext applicationContext = SpringApplication.run(SeataApplication.class, args);
+        ConfigurableApplicationContext applicationContext = SpringApplication.run(SeataXAMultApplication.class, args);
     }
 }

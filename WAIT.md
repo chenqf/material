@@ -44,6 +44,7 @@
 + JFR
 + 动态代理 再看一下 https://vip.tulingxueyuan.cn/live_pc/l_63b7c2b3e4b0fc5d1221ccd4 后面
 + 字段校验
++ 动态数据源-多数据源 - 多租户
 + spring bean 声明周期
 + 好好研究一下多态
 + GC Roots 可达性分析      
@@ -68,21 +69,3 @@
     + RSA - 计算量比较大
 + mysql  https://www.bilibili.com/video/BV1JG4y1Q7BX/?spm_id_from=333.337.search-card.all.click&vd_source=0494972cf815a7a4a8ac831a4c0a1229
 
-
-## 中台
-
-提供共性能力, 让数据资产通过服务的方式, 快速构建上层应用
-
-融合BI, 融合主数据, 融合数据交换 - 四不像
-
-
-
-
-
-业务中台:
-
-用户中心, 商品中心, 订单中心, 结算中心, 会员中心, 组成的能力加暴露的接口
-
-
-
-数据中台	`

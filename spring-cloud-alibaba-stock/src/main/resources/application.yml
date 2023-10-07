@@ -3,6 +3,11 @@ server:
 spring:
   application:
     name: spring-cloud-alibaba-stock # 应用名称, nacos会将名称当做服务名称
+  datasource:
+    url: jdbc:mysql://${ENV_CLOUD_IP}:3306/stock?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
   cloud:
     nacos:
       server-addr: 127.0.0.1:8848
@@ -29,3 +34,30 @@ feign:
         connect-timeout: 5000
         # 请求处理超时时间 默认5s
         read-timeout: 10000
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  #    default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler
+  # 配置类型别名对应的包
+  type-aliases-package: com.maple.stock.entity
+
+seata:
+  # 默认AT
+  data-source-proxy-mode: AT
+  application-id: ${spring.application.name}
+  # seata 服务分组，要与服务端配置service.vgroup_mapping的后缀对应
+  tx-service-group: default_tx_group
+  registry:
+    type: nacos
+    nacos:
+      application: seata-server
+      server-addr: 127.0.0.1:8848
+      namespace: adb6f806-e08a-41c0-9160-f63d6ac6a732
+      group: SEATA_GROUP
+  config:
+    type: nacos
+    nacos:
+      server-addr: 127.0.0.1:8848
+      namespace: adb6f806-e08a-41c0-9160-f63d6ac6a732
+      group: SEATA_GROUP
+      data-id: seataServer.properties
