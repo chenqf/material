@@ -1,0 +1,24 @@
+server:
+  port: 9000
+spring:
+  application:
+    name: spirng-boot-shiro
+  datasource:
+    url: jdbc:mysql://${ENV_CLOUD_IP}:3306/shirodb?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.zaxxer.hikari.HikariDataSource
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  #    default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler
+  # 配置类型别名对应的包
+  type-aliases-package: com.maple.shiro.entity
+  mapper-locations: classpath:mapper/*.xml
+

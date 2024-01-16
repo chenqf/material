@@ -1,32 +1,17 @@
 package com.maple.rabbitMQ.config;
 
 
-import ch.qos.logback.core.util.TimeUtil;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.maple.common.utils.JSONUtil;
-import com.maple.rabbitMQ.utils.MessageSender;
-import org.omg.CORBA.TIMEOUT;
-import org.springframework.amqp.AmqpException;
-import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessagePostProcessor;
-import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.rabbit.batch.BatchingStrategy;
-import org.springframework.amqp.rabbit.batch.SimpleBatchingStrategy;
-import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.connection.CorrelationData;
-import org.springframework.amqp.rabbit.core.BatchingRabbitTemplate;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.amqp.SimpleRabbitListenerContainerFactoryConfigurer;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
+import java.util.Map;
 
 import javax.annotation.PostConstruct;
-import java.util.HashMap;
-import java.util.Map;
+
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Configuration;
+
+import com.maple.rabbitMQ.utils.MessageSender;
 
 /**
  * @author 陈其丰
@@ -96,9 +81,6 @@ public class RabbitConfig {
             }
         });
     }
-
-
-
 
 
 }

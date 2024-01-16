@@ -37,6 +37,7 @@
         <module>jvm-demo</module>
         <module>encryption-demo</module>
         <module>seata-demo</module>
+        <module>shiro</module>
     </modules>
     <name>material</name>
     <description>material</description>

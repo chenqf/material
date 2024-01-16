@@ -1,8 +1,6 @@
 package com.maple.seata.controller;
 
-import com.maple.seata.service.XAMultService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * @author 陈其丰

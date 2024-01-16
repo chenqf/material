@@ -1,7 +1,5 @@
 package com.maple;
 
-import org.omg.PortableServer.THREAD_POLICY_ID;
-
 /**
  * @author 陈其丰
  */

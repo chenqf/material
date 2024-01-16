@@ -1,7 +1,6 @@
 package com.maple;
 
 import java.io.FileInputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 /**
@@ -55,9 +54,9 @@ public class MyClassLoaderTest {
                     }
 
                     // this is the defining class loader; record the stats
-                    sun.misc.PerfCounter.getParentDelegationTime().addTime(t1 - t0);
-                    sun.misc.PerfCounter.getFindClassTime().addElapsedTimeFrom(t1);
-                    sun.misc.PerfCounter.getFindClasses().increment();
+//                    sun.misc.PerfCounter.getParentDelegationTime().addTime(t1 - t0);
+//                    sun.misc.PerfCounter.getFindClassTime().addElapsedTimeFrom(t1);
+//                    sun.misc.PerfCounter.getFindClasses().increment();
                 }
                 if (resolve) {
                     resolveClass(c);
