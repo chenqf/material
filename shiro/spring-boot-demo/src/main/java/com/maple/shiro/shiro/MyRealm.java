@@ -1,4 +1,4 @@
-package com.maple.shiro.realm;
+package com.maple.shiro.shiro;
 
 import java.util.List;
 

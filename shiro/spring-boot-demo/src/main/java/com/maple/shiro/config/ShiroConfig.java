@@ -11,17 +11,22 @@ import org.apache.shiro.web.mgt.CookieRememberMeManager;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
 import org.apache.shiro.web.servlet.SimpleCookie;
 import org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.handler.SimpleMappingExceptionResolver;
 
-import com.maple.shiro.realm.MyRealm;
+import com.maple.shiro.shiro.MyRealm;
+import com.maple.shiro.shiro.RedisSessionDao;
 
 /**
  * @Description:shiro配置类
  */
 @Configuration
 public class ShiroConfig {
+
+    @Value("${session.redis.expireTime}")
+    private long expireTime;
     /**
      * 创建ShiroFilterFactoryBean
      */
@@ -60,11 +65,26 @@ public class ShiroConfig {
         return shiroFilterFactoryBean;
     }
 
+//    @Bean
+//    public DefaultWebSessionManager defaultWebSessionManager(RedisSessionDao redisSessionDao) {
+//        DefaultWebSessionManager sessionManager = new DefaultWebSessionManager();
+//        sessionManager.setGlobalSessionTimeout(expireTime * 1000);
+//        sessionManager.setDeleteInvalidSessions(true);
+//        sessionManager.setSessionDAO(redisSessionDao);
+//        sessionManager.setSessionValidationSchedulerEnabled(true);
+//        sessionManager.setDeleteInvalidSessions(true);
+//        /**
+//         * 修改Cookie中的SessionId的key，默认为JSESSIONID，自定义名称
+//         */
+//        sessionManager.setSessionIdCookie(new SimpleCookie("JSESSIONID"));
+//        return sessionManager;
+//    }
+
     /**
      * 创建DefaultWebSecurityManager
      */
     @Bean
-    public DefaultWebSecurityManager getDefaultWebSecurityManager(MyRealm myRealm) {
+    public DefaultWebSecurityManager getDefaultWebSecurityManager(MyRealm myRealm, RedisSessionDao redisSessionDao) {
         // 1. 创建 DefaultWebSecurityManager
         DefaultWebSecurityManager securityManager = new DefaultWebSecurityManager();
         // 2. 创建加密对象, 设置相关属性
@@ -76,7 +96,9 @@ public class ShiroConfig {
         // 4. 将MyRealm存入DefaultWebSecurityManager
         securityManager.setRealm(myRealm);
         // 5. 设置 remember me
-        securityManager.setRememberMeManager(rememberMeManager());
+        securityManager.setRememberMeManager(null);
+//        securityManager.setRememberMeManager(rememberMeManager());
+//        securityManager.setSessionManager(defaultWebSessionManager(redisSessionDao));
         return securityManager;
     }
 
@@ -103,9 +125,9 @@ public class ShiroConfig {
     }
 
     @Bean
-    public AuthorizationAttributeSourceAdvisor authorizationAttributeSourceAdvisor(MyRealm myRealm) {
+    public AuthorizationAttributeSourceAdvisor authorizationAttributeSourceAdvisor(MyRealm myRealm, RedisSessionDao redisSessionDao) {
         AuthorizationAttributeSourceAdvisor authorizationAttributeSourceAdvisor = new AuthorizationAttributeSourceAdvisor();
-        authorizationAttributeSourceAdvisor.setSecurityManager(getDefaultWebSecurityManager(myRealm));
+        authorizationAttributeSourceAdvisor.setSecurityManager(getDefaultWebSecurityManager(myRealm, redisSessionDao));
         return authorizationAttributeSourceAdvisor;
     }
 
@@ -118,26 +140,6 @@ public class ShiroConfig {
         resolver.setExceptionMappings(properties);
         return resolver;
     }
-
-
-//    @Bean
-//    public DefaultSecurityManager securityManager(MyRealm myRealm, RedisCacheManager redisCacheManager) {
-//        // 1. 创建 DefaultWebSecurityManager
-//        DefaultSecurityManager securityManager = new DefaultWebSecurityManager();
-//        // 2. 创建加密对象, 设置相关属性
-//        HashedCredentialsMatcher matcher = new HashedCredentialsMatcher();
-//        matcher.setHashAlgorithmName("md5");
-//        matcher.setHashIterations(3);
-//        // 3. 将加密对象存储到MyRealm中
-//        myRealm.setCredentialsMatcher(matcher);
-//        // 4. 将MyRealm存入DefaultWebSecurityManager
-//        securityManager.setRealm(myRealm);
-//        // 5. 设置 remember me
-//        securityManager.setRememberMeManager(rememberMeManager());
-//        // 6. 添加缓存管理
-//        securityManager.setCacheManager((CacheManager) redisCacheManager);
-//        return securityManager;
-//    }
 }
 
 
