@@ -12,6 +12,11 @@ spring:
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
+  redis:
+    host: ${ENV_CLOUD_IP}:6379
+    database: 0
+    password: chenqfredis
+    timeout: 3000
 
 
 mybatis-plus:

@@ -1,5 +1,7 @@
 package com.maple.shiro.service.impl;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -19,5 +21,15 @@ public class UserServiceImpl implements UserService {
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("name", name);
         return userMapper.selectOne(queryWrapper);
+    }
+
+    @Override
+    public List<String> getUserRoleInfo(String principal) {
+        return userMapper.getUserRoleInfoMapper(principal);
+    }
+
+    @Override
+    public List<String> getUserPermissions(String principal) {
+        return userMapper.getUserPermissionsMapper(principal);
     }
 }
