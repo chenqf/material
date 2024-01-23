@@ -65,21 +65,6 @@ public class ShiroConfig {
         return shiroFilterFactoryBean;
     }
 
-//    @Bean
-//    public DefaultWebSessionManager defaultWebSessionManager(RedisSessionDao redisSessionDao) {
-//        DefaultWebSessionManager sessionManager = new DefaultWebSessionManager();
-//        sessionManager.setGlobalSessionTimeout(expireTime * 1000);
-//        sessionManager.setDeleteInvalidSessions(true);
-//        sessionManager.setSessionDAO(redisSessionDao);
-//        sessionManager.setSessionValidationSchedulerEnabled(true);
-//        sessionManager.setDeleteInvalidSessions(true);
-//        /**
-//         * 修改Cookie中的SessionId的key，默认为JSESSIONID，自定义名称
-//         */
-//        sessionManager.setSessionIdCookie(new SimpleCookie("JSESSIONID"));
-//        return sessionManager;
-//    }
-
     /**
      * 创建DefaultWebSecurityManager
      */
