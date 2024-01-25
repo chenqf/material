@@ -10,10 +10,11 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class User implements Serializable {
+public class Permission implements Serializable {
     @Serial
-    private static final long serialVersionUID = 662428174404871864L;
+    private static final long serialVersionUID = 8408838514735456104L;
     private Long id;
     private String name;
-    private String pwd;
+    private String info;
+    private String desc;
 }

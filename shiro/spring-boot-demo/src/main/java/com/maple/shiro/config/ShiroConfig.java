@@ -5,19 +5,20 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.apache.shiro.authc.credential.HashedCredentialsMatcher;
+import org.apache.shiro.cache.ehcache.EhCacheManager;
 import org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
-import org.apache.shiro.web.mgt.CookieRememberMeManager;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
-import org.apache.shiro.web.servlet.SimpleCookie;
 import org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.web.servlet.handler.SimpleMappingExceptionResolver;
 
 import com.maple.shiro.shiro.MyRealm;
-import com.maple.shiro.shiro.RedisSessionDao;
+import com.maple.shiro.shiro.MyRedisCacheManager;
 
 /**
  * @Description:shiro配置类
@@ -27,6 +28,9 @@ public class ShiroConfig {
 
     @Value("${session.redis.expireTime}")
     private long expireTime;
+
+    @Autowired
+    private MyRedisCacheManager myRedisCacheManager;
     /**
      * 创建ShiroFilterFactoryBean
      */
@@ -69,37 +73,37 @@ public class ShiroConfig {
      * 创建DefaultWebSecurityManager
      */
     @Bean
-    public DefaultWebSecurityManager getDefaultWebSecurityManager(MyRealm myRealm, RedisSessionDao redisSessionDao) {
+    public DefaultWebSecurityManager getDefaultWebSecurityManager(MyRealm myRealm, RedisCacheManager cacheManager) {
         // 1. 创建 DefaultWebSecurityManager
         DefaultWebSecurityManager securityManager = new DefaultWebSecurityManager();
         // 2. 创建加密对象, 设置相关属性
         HashedCredentialsMatcher matcher = new HashedCredentialsMatcher();
+        // 2.1 加密算法是MD5
         matcher.setHashAlgorithmName("md5");
+        // 2.2 散列3次
         matcher.setHashIterations(3);
         // 3. 将加密对象存储到MyRealm中
         myRealm.setCredentialsMatcher(matcher);
-        // 4. 将MyRealm存入DefaultWebSecurityManager
+        // 4. 缓存设置
+        // 开启全局缓存
+        myRealm.setCachingEnabled(true);
+        // 开启认证缓存 - 判断登录
+        myRealm.setAuthenticationCachingEnabled(true);
+        // 设置认证缓存管理的名字 - 判断登录
+        myRealm.setAuthenticationCacheName("authenticationCache");
+        // 开启授权缓存管理
+        myRealm.setAuthorizationCachingEnabled(true);
+        // 设置授权缓存管理的名字
+        myRealm.setAuthorizationCacheName("authorizationCache");
+        // 开启缓存
+//        myRealm.setCacheManager(myRedisCacheManager);
+        myRealm.setCacheManager(new EhCacheManager());
+        // 5. 将MyRealm存入DefaultWebSecurityManager
         securityManager.setRealm(myRealm);
-        // 5. 设置 remember me
+        // 6. 设置 remember me
         securityManager.setRememberMeManager(null);
 //        securityManager.setRememberMeManager(rememberMeManager());
-//        securityManager.setSessionManager(defaultWebSessionManager(redisSessionDao));
         return securityManager;
-    }
-
-    public SimpleCookie rememberMeCookie() {
-        SimpleCookie cookie = new SimpleCookie("rememberMe");
-        cookie.setPath("/");
-        cookie.setHttpOnly(true);
-        cookie.setMaxAge(30 * 24 * 60 * 60);
-        return cookie;
-    }
-
-    public CookieRememberMeManager rememberMeManager() {
-        CookieRememberMeManager cookieRememberMeManager = new CookieRememberMeManager();
-        cookieRememberMeManager.setCookie(rememberMeCookie());
-        cookieRememberMeManager.setCipherKey("1234567890987654".getBytes());
-        return cookieRememberMeManager;
     }
 
     @Bean
@@ -109,10 +113,13 @@ public class ShiroConfig {
         return advisorAutoProxyCreator;
     }
 
+    /**
+     * 用于开启shiro注解
+     */
     @Bean
-    public AuthorizationAttributeSourceAdvisor authorizationAttributeSourceAdvisor(MyRealm myRealm, RedisSessionDao redisSessionDao) {
+    public AuthorizationAttributeSourceAdvisor authorizationAttributeSourceAdvisor(MyRealm myRealm, RedisCacheManager cacheManager) {
         AuthorizationAttributeSourceAdvisor authorizationAttributeSourceAdvisor = new AuthorizationAttributeSourceAdvisor();
-        authorizationAttributeSourceAdvisor.setSecurityManager(getDefaultWebSecurityManager(myRealm, redisSessionDao));
+        authorizationAttributeSourceAdvisor.setSecurityManager(getDefaultWebSecurityManager(myRealm, cacheManager));
         return authorizationAttributeSourceAdvisor;
     }
 

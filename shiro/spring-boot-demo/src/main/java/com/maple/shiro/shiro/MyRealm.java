@@ -84,6 +84,7 @@ public class MyRealm extends AuthorizingRealm {
                     authenticationToken.getPrincipal(),
                     user.getPwd(),
                     ByteSource.Util.bytes("salt-key"),
+//                    new MyByteSource("salt-key"),
                     authenticationToken.getPrincipal().toString()
             );
         }

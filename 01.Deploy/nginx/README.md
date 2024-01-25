@@ -1,5 +1,29 @@
 # Nginx
 
+## 最简安装
+
+通过官方镜像获取配置文件, copy后再进行挂载安装
+
+```shell
+export BASE_DIR=/opt/docker-data/nginx
+export NAME=nginx
+export VERSION=1.20
+docker run --name ${NAME} -p 80:80 -d nginx:${VERSION};
+mkdir -p ${BASE_DIR}/logs;
+docker cp ${NAME}:/etc/nginx/conf.d/ ${BASE_DIR};
+docker cp ${NAME}:/usr/share/nginx/html/ ${BASE_DIR};
+docker cp ${NAME}:/etc/nginx/nginx.conf ${BASE_DIR};
+docker stop ${NAME};
+docker rm ${NAME};
+docker run --name nginx -p 80:80 \
+-v ${BASE_DIR}/conf.d/:/etc/nginx/conf.d/ \
+-v ${BASE_DIR}/nginx.conf:/etc/nginx/nginx.conf \
+-v ${BASE_DIR}/html:/usr/share/nginx/html/ \
+-v ${BASE_DIR}/logs/:/var/log/nginx/ \
+--privileged=true -d nginx:${VERSION};
+```
+
+
 Nginx官方镜像不带Stream模块, 通过Dockerfile创建自定义Nginx镜像
 
 ### 准备Nginx配置文件 - nginx.conf

@@ -29,7 +29,7 @@ docker ps -a | grep ${DOCKER_REDIS_NAME}
 # 访问redis
 # docker exec -it <container-name> /bin/bash;
 # redis-cli -p 6379 -a ${REDIS_PASSWORD}
-# docker exec -it <container-name> redis-cli -p 6379 -a ${REDIS_PASSWORD}
+# docker exec -it redis redis-cli -p 6379 -a chenqfredis
 # FLUSHALL # 清空db
 ```
 

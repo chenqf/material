@@ -10,10 +10,11 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class User implements Serializable {
+public class Role implements Serializable {
     @Serial
-    private static final long serialVersionUID = 662428174404871864L;
+    private static final long serialVersionUID = -4008990799202866487L;
     private Long id;
     private String name;
-    private String pwd;
+    private String desc;
+    private String realname;
 }
