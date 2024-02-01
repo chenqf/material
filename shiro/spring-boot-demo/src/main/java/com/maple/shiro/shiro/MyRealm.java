@@ -10,7 +10,6 @@ import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.SimpleAuthorizationInfo;
 import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
-import org.apache.shiro.util.ByteSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +25,21 @@ public class MyRealm extends AuthorizingRealm {
     @Autowired
     private UserService userService;
 
+    /**
+     * 判断登录的cache-key
+     */
+    @Override
+    protected Object getAuthenticationCacheKey(AuthenticationToken token) {
+        return token.getPrincipal().toString() + "_authentication";
+    }
+
+    /**
+     * 判断权限的cache-key
+     */
+    @Override
+    protected Object getAuthorizationCacheKey(PrincipalCollection principals) {
+        return principals.toString() + "_authorization";
+    }
 
     /**
      * SELECT role.name
@@ -36,12 +50,12 @@ public class MyRealm extends AuthorizingRealm {
      */
 
     /**
-     * SELECT distinct permissions.info
+     * SELECT distinct permission.info
      * FROM user
      * JOIN role_user ON user.id = role_user.user_id
      * JOIN role ON role_user.role_id = role.id
      * JOIN role_permission ON role.id = role_permission.role_id
-     * JOIN permissions ON role_permission.permission_id = permissions.id
+     * JOIN permission ON role_permission.permission_id = permissions.id
      * WHERE user.name = 'cqf';
      */
 
@@ -83,8 +97,8 @@ public class MyRealm extends AuthorizingRealm {
             return new SimpleAuthenticationInfo(
                     authenticationToken.getPrincipal(),
                     user.getPwd(),
-                    ByteSource.Util.bytes("salt-key"),
-//                    new MyByteSource("salt-key"),
+//                    ByteSource.Util.bytes("salt-key"),
+                    new MySimpleByteSource("salt-key"),
                     authenticationToken.getPrincipal().toString()
             );
         }

@@ -12,8 +12,10 @@ public class MyRedisCacheManager implements CacheManager {
     @Autowired
     private MyRedisCache myRedisCache;
 
+
     @Override
-    public <K, V> Cache<K, V> getCache(String s) throws CacheException {
-        return myRedisCache.setKey(s);
+    public <K, V> Cache<K, V> getCache(String cacheName) throws CacheException {
+        myRedisCache.setCacheName(cacheName);
+        return myRedisCache;
     }
 }

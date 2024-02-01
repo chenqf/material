@@ -5,13 +5,11 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.apache.shiro.authc.credential.HashedCredentialsMatcher;
-import org.apache.shiro.cache.ehcache.EhCacheManager;
 import org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
 import org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheManager;
@@ -25,9 +23,6 @@ import com.maple.shiro.shiro.MyRedisCacheManager;
  */
 @Configuration
 public class ShiroConfig {
-
-    @Value("${session.redis.expireTime}")
-    private long expireTime;
 
     @Autowired
     private MyRedisCacheManager myRedisCacheManager;
@@ -87,17 +82,17 @@ public class ShiroConfig {
         // 4. 缓存设置
         // 开启全局缓存
         myRealm.setCachingEnabled(true);
-        // 开启认证缓存 - 判断登录
-        myRealm.setAuthenticationCachingEnabled(true);
-        // 设置认证缓存管理的名字 - 判断登录
-        myRealm.setAuthenticationCacheName("authenticationCache");
         // 开启授权缓存管理
         myRealm.setAuthorizationCachingEnabled(true);
+        // 开启认证缓存 - 判断登录
+        myRealm.setAuthenticationCachingEnabled(true);
         // 设置授权缓存管理的名字
-        myRealm.setAuthorizationCacheName("authorizationCache");
+        myRealm.setAuthorizationCacheName("shiro-auth");
+        // 设置认证缓存管理的名字 - 判断登录 - 貌似没用
+        myRealm.setAuthenticationCacheName("authenticationCache");
         // 开启缓存
-//        myRealm.setCacheManager(myRedisCacheManager);
-        myRealm.setCacheManager(new EhCacheManager());
+        myRealm.setCacheManager(myRedisCacheManager);
+//        myRealm.setCacheManager(new EhCacheManager());
         // 5. 将MyRealm存入DefaultWebSecurityManager
         securityManager.setRealm(myRealm);
         // 6. 设置 remember me

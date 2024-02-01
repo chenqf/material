@@ -100,3 +100,13 @@ public class DemoController {
  * @RequiresRoles("admin") 是否是XX角色
  * @RequiresPermissions("account:add") 是否有XX权限
  */
+
+
+/**
+ * Subject subject =SecurityUtils.getSubject();
+ * if(subject.hasRole("admin")){
+ * //有权限
+ * }else{
+ * //无权限
+ * }
+ */

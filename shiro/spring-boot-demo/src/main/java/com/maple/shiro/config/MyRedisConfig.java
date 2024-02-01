@@ -8,10 +8,7 @@ import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
-import org.springframework.data.redis.serializer.RedisSerializationContext;
-import org.springframework.data.redis.serializer.RedisSerializer;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.data.redis.serializer.*;
 
 /**
  * @author chenqf
@@ -19,7 +16,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 @Configuration
 public class MyRedisConfig {
 
-    private Duration timeToLive = Duration.ofHours(1);
+    private final Duration timeToLive = Duration.ofHours(1);
 
     @Bean
     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
@@ -44,11 +41,26 @@ public class MyRedisConfig {
         return template;
     }
 
+    @Bean(name = "shiroRedisTemplate")
+    public RedisTemplate<String, Object> shiroRedisTemplate(RedisConnectionFactory redisConnectionFactory) {
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(keySerializer());
+        template.setHashKeySerializer(keySerializer());
+        template.setValueSerializer(shiroValueSerializer());
+        template.setHashValueSerializer(shiroValueSerializer());
+        return template;
+    }
+
+    private RedisSerializer<Object> shiroValueSerializer() {
+        return new JdkSerializationRedisSerializer();
+    }
+
     private RedisSerializer<String> keySerializer() {
         return new StringRedisSerializer();
     }
 
     private RedisSerializer<Object> valueSerializer() {
-        return new JdkSerializationRedisSerializer();
+        return new GenericJackson2JsonRedisSerializer();
     }
 }

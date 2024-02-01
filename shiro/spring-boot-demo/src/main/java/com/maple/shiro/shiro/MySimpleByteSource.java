@@ -11,44 +11,46 @@ import org.apache.shiro.codec.CodecSupport;
 import org.apache.shiro.codec.Hex;
 import org.apache.shiro.util.ByteSource;
 
-//salt实现自定义序列化接口
-public class MyByteSource implements ByteSource, Serializable {
-
+public class MySimpleByteSource implements ByteSource, Serializable {
     @Serial
-    private static final long serialVersionUID = -7043838671545320878L;
+    private static final long serialVersionUID = -496737816933499842L;
     private byte[] bytes;
     private String cachedHex;
     private String cachedBase64;
 
-    public MyByteSource() {
+    public MySimpleByteSource() {
     }
 
-    public MyByteSource(byte[] bytes) {
+    public MySimpleByteSource(byte[] bytes) {
         this.bytes = bytes;
     }
 
-    public MyByteSource(char[] chars) {
+    public MySimpleByteSource(char[] chars) {
         this.bytes = CodecSupport.toBytes(chars);
     }
 
-    public MyByteSource(String string) {
+    public MySimpleByteSource(String string) {
         this.bytes = CodecSupport.toBytes(string);
     }
 
-    public MyByteSource(ByteSource source) {
+    public MySimpleByteSource(ByteSource source) {
         this.bytes = source.getBytes();
     }
 
-    public MyByteSource(File file) {
-        this.bytes = (new MyByteSource.BytesHelper()).getBytes(file);
+    public MySimpleByteSource(File file) {
+        this.bytes = (new MySimpleByteSource.BytesHelper()).getBytes(file);
     }
 
-    public MyByteSource(InputStream stream) {
-        this.bytes = (new MyByteSource.BytesHelper()).getBytes(stream);
+    public MySimpleByteSource(InputStream stream) {
+        this.bytes = (new MySimpleByteSource.BytesHelper()).getBytes(stream);
     }
 
     public static boolean isCompatible(Object o) {
         return o instanceof byte[] || o instanceof char[] || o instanceof String || o instanceof ByteSource || o instanceof File || o instanceof InputStream;
+    }
+
+    public void setBytes(byte[] bytes) {
+        this.bytes = bytes;
     }
 
     @Override
@@ -56,17 +58,12 @@ public class MyByteSource implements ByteSource, Serializable {
         return this.bytes;
     }
 
-    @Override
-    public boolean isEmpty() {
-        return this.bytes == null || this.bytes.length == 0;
-    }
 
     @Override
     public String toHex() {
         if (this.cachedHex == null) {
             this.cachedHex = Hex.encodeToString(this.getBytes());
         }
-
         return this.cachedHex;
     }
 
@@ -77,6 +74,11 @@ public class MyByteSource implements ByteSource, Serializable {
         }
 
         return this.cachedBase64;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return this.bytes == null || this.bytes.length == 0;
     }
 
     @Override
@@ -114,4 +116,3 @@ public class MyByteSource implements ByteSource, Serializable {
         }
     }
 }
-
