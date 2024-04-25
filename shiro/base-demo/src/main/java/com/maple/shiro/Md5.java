@@ -10,6 +10,6 @@ public class Md5 {
         Md5Hash md5HashForSalt = new Md5Hash(password, "salt-key");
         System.out.println("md5加密 加盐 = " + md5HashForSalt.toHex());
         Md5Hash md5HashForSaltIterations = new Md5Hash(password, "salt-key", 3);
-        System.out.println("md5加密 加盐 迭代3次 = " + md5HashForSaltIterations.toHex());
+        System.out.println("md5加密 加盐 散列3次 = " + md5HashForSaltIterations.toHex());
     }
 }

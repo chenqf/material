@@ -17,13 +17,6 @@ docker stop ${DOCKER_NAME} &> /dev/null
 docker rm ${DOCKER_NAME} &> /dev/null
 docker run --name ${DOCKER_NAME} --network maple-net -v ${BASE_DIR}/conf:/etc/mysql/conf.d -v ${BASE_DIR}/logs:/logs \
 -v ${BASE_DIR}/data:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD} -d -i -p ${PORT}:3306 mysql:8.0
-# 进入容器
-# docker exec -it ${DOCKER_NAME} /bin/bash
-# 开启远程访问
-docker exec -it ${DOCKER_NAME} mysql -uroot -p${MYSQL_ROOT_PASSWORD} 
-sleep 3s
-SQL="use mysql; select host,user from user; ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY '${MYSQL_ROOT_PASSWORD}'; flush privileges;"
-docker exec -it ${DOCKER_NAME} mysql -uroot -p${MYSQL_ROOT_PASSWORD} -e "$SQL"
 ```
 
 开启远程访问:
@@ -38,6 +31,11 @@ use mysql;
 select host, user from user;
 ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY '123456'; 
 flush privileges;
+
+# 8+适用, 但需要本地换客户端
+# create user root@'%' identified by '123456';
+# grant all privileges on *.* to root@'%' with grant option;
+# flush privileges;
 ```
 
 ## 主从集群

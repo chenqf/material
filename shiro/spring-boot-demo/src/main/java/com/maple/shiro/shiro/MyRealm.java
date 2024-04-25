@@ -41,30 +41,12 @@ public class MyRealm extends AuthorizingRealm {
         return principals.toString() + "_authorization";
     }
 
-    /**
-     * SELECT role.name
-     * FROM user
-     * JOIN role_user ON user.id = role_user.user_id
-     * JOIN role ON role_user.role_id = role.id
-     * WHERE user.name = 'cqf';
-     */
-
-    /**
-     * SELECT distinct permission.info
-     * FROM user
-     * JOIN role_user ON user.id = role_user.user_id
-     * JOIN role ON role_user.role_id = role.id
-     * JOIN role_permission ON role.id = role_permission.role_id
-     * JOIN permission ON role_permission.permission_id = permissions.id
-     * WHERE user.name = 'cqf';
-     */
 
     /**
      * 执行授权逻辑 - 判断 角色 和 权限
      */
     @Override
     protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principalCollection) {
-        System.out.println("执行授权逻辑");
         // 1. 创建对象, 封装当前用户的角色/权限信息
         SimpleAuthorizationInfo info = new SimpleAuthorizationInfo();
         // 2. 获取当前用户的身份信息
@@ -87,7 +69,6 @@ public class MyRealm extends AuthorizingRealm {
      */
     @Override
     protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken authenticationToken) throws AuthenticationException {
-        System.out.println("start 执行认证逻辑");
         // 1. 获取用户信息
         String name = authenticationToken.getPrincipal().toString();
         // 2. 调用业务层获取用户信息

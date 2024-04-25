@@ -1,6 +1,8 @@
 server:
   port: 9000
 spring:
+  session:
+    store-type: redis
   application:
     name: spirng-boot-shiro
   datasource:
@@ -17,10 +19,11 @@ spring:
     password: chenqfredis
     timeout: 3000
     port: 6379
+    database: 0
 
-session:
-  redis:
-    expireTime: 3600 # Session过期时间（秒）
+#session:
+#  redis:
+#    expireTime: 600 # Session过期时间（秒）
 
 
 mybatis-plus:

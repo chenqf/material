@@ -2,8 +2,10 @@ package com.maple.shiro.controllers;
 
 import java.util.List;
 
+import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.apache.shiro.authz.annotation.RequiresRoles;
+import org.apache.shiro.subject.Subject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,7 +36,6 @@ public class DemoController {
      */
     @GetMapping("/getUserByName/{name}")
     public User getUserByName(@PathVariable String name) {
-        System.out.println("name = " + name);
         return userService.getUserByName(name);
     }
 
@@ -43,7 +44,6 @@ public class DemoController {
      */
     @GetMapping("/getRolesByName/{name}")
     public List<String> getRolesByName(@PathVariable String name) {
-        System.out.println("name = " + name);
         return userService.getUserRoleInfo(name);
     }
 
@@ -52,7 +52,6 @@ public class DemoController {
      */
     @GetMapping("/getUserPermissions/{name}")
     public List<String> getUserPermissions(@PathVariable String name) {
-        System.out.println("name = " + name);
         return userService.getUserPermissions(name);
     }
 
@@ -62,6 +61,8 @@ public class DemoController {
     @RequiresRoles("admin")
     @GetMapping("/checkRoleByAdmin")
     public String checkRoleByAdmin() {
+        Subject subject = SecurityUtils.getSubject();
+        System.out.println("session user : " + subject.getSession().getAttribute("user"));
         return "验证角色( admin )成功";
     }
 

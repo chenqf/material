@@ -8,6 +8,7 @@ import org.apache.shiro.authc.credential.HashedCredentialsMatcher;
 import org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
+import org.apache.shiro.web.session.mgt.DefaultWebSessionManager;
 import org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -17,6 +18,8 @@ import org.springframework.web.servlet.handler.SimpleMappingExceptionResolver;
 
 import com.maple.shiro.shiro.MyRealm;
 import com.maple.shiro.shiro.MyRedisCacheManager;
+import com.maple.shiro.shiro.MyWebSessionManager;
+import com.maple.shiro.shiro.RedisSessionDAO;
 
 /**
  * @Description:shiro配置类
@@ -26,6 +29,9 @@ public class ShiroConfig {
 
     @Autowired
     private MyRedisCacheManager myRedisCacheManager;
+
+    @Autowired
+    private RedisSessionDAO redisSessionDAO;
     /**
      * 创建ShiroFilterFactoryBean
      */
@@ -52,16 +58,36 @@ public class ShiroConfig {
         filterMap.put("/auth/notLogin", "anon");
         filterMap.put("/auth/noRoleOrNoPermission", "anon");
         filterMap.put("/auth/login", "anon");
-        filterMap.put("/auth/logout", "logout");
+        filterMap.put("/auth/logout", "anon");
+
+//        filterMap.put("/auth/logout", "logout");
 
         filterMap.put("/**", "authc");
-        filterMap.put("/**", "user");
+//        filterMap.put("/**", "user");
 
         // 要求登陆时的链接，非必须。
         shiroFilterFactoryBean.setLoginUrl("/auth/notLogin");
 
         shiroFilterFactoryBean.setFilterChainDefinitionMap(filterMap);
         return shiroFilterFactoryBean;
+    }
+
+    @Bean
+    public DefaultWebSessionManager sessionManager() {
+        MyWebSessionManager sessionManager = new MyWebSessionManager();
+//        sessionManager.setSessionFactory(new SessionFactory() {
+//            @Override
+//            public Session createSession(SessionContext initData) {
+//                return new SpringSession;
+//            }
+//        });
+        sessionManager.setSessionDAO(redisSessionDAO);
+        //shiro 的session默认放在cookie中 禁用
+        sessionManager.setSessionIdCookieEnabled(false);
+        //禁用url 重写 url; shiro请求时默认 jsessionId=id
+        sessionManager.setSessionIdUrlRewritingEnabled(false);
+
+        return sessionManager;
     }
 
     /**
@@ -91,13 +117,12 @@ public class ShiroConfig {
         // 设置认证缓存管理的名字 - 判断登录 - 貌似没用
         myRealm.setAuthenticationCacheName("authenticationCache");
         // 开启缓存
-        myRealm.setCacheManager(myRedisCacheManager);
-//        myRealm.setCacheManager(new EhCacheManager());
+        myRealm.setCacheManager(myRedisCacheManager); // new EhCacheManager()
         // 5. 将MyRealm存入DefaultWebSecurityManager
         securityManager.setRealm(myRealm);
+        securityManager.setSessionManager(sessionManager());
         // 6. 设置 remember me
         securityManager.setRememberMeManager(null);
-//        securityManager.setRememberMeManager(rememberMeManager());
         return securityManager;
     }
 

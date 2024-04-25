@@ -49,6 +49,7 @@ public class MyRedisConfig {
         template.setHashKeySerializer(keySerializer());
         template.setValueSerializer(shiroValueSerializer());
         template.setHashValueSerializer(shiroValueSerializer());
+
         return template;
     }
 
@@ -63,4 +64,6 @@ public class MyRedisConfig {
     private RedisSerializer<Object> valueSerializer() {
         return new GenericJackson2JsonRedisSerializer();
     }
+
+
 }
