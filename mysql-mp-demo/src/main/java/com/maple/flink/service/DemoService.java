@@ -1,11 +1,12 @@
-package com.maple.mysql.service;
+package com.maple.flink.service;
 
-import com.maple.mysql.entity.Account;
-import com.maple.mysql.mapper.AccountMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+
+import com.maple.flink.entity.Account;
+import com.maple.flink.mapper.AccountMapper;
 
 /**
  * @author 陈其丰

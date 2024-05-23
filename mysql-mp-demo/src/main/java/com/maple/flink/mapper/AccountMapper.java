@@ -1,8 +1,9 @@
-package com.maple.mysql.mapper;
+package com.maple.flink.mapper;
+
+import org.apache.ibatis.annotations.Mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.maple.mysql.entity.Account;
-import org.apache.ibatis.annotations.Mapper;
+import com.maple.flink.entity.Account;
 
 /**
  * @author 陈其丰

@@ -1,4 +1,4 @@
-package com.maple.mysql.entity;
+package com.maple.flink.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

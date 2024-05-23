@@ -38,6 +38,7 @@
         <module>encryption-demo</module>
         <module>seata-demo</module>
         <module>shiro</module>
+        <module>hadoop-demo</module>
     </modules>
     <name>material</name>
     <description>material</description>

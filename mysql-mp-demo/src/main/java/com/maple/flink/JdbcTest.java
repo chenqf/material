@@ -1,4 +1,4 @@
-package com.maple.mysql;
+package com.maple.flink;
 
 import java.sql.Connection;
 import java.sql.DriverManager;

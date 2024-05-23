@@ -1,13 +1,12 @@
-package com.maple.mysql.controller;
+package com.maple.flink.controller;
 
 
-import com.maple.mysql.service.DemoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import com.maple.flink.service.DemoService;
 
 /**
  * @author 陈其丰
