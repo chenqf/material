@@ -20,7 +20,15 @@ docker run -d --name kafka-standalone --hostname kafka-standalone \
 # docker exec -it kafka-standalone /bin/bash
 ```
 
+```shell
+
+```
+
 
 
 
 ## 集群安装
+
+```shell
+wget https://archive.apache.org/dist/kafka/3.6.1/kafka_2.12-3.6.1.tgz
+```

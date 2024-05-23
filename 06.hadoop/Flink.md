@@ -287,3 +287,107 @@ public class EnvDemo {
     }
 }
 ```
+
+### 源算子 Source Operator
+
+数据的输入来源称为数据源(datasource), 读取数据的算子就是源算子(source operator)
+
+**准备:**
+
+```xml
+
+<dependencies>
+    <dependency>
+        <groupId>org.apache.flink</groupId>
+        <artifactId>flink-streaming-java</artifactId>
+        <version>1.17.2</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.flink</groupId>
+        <artifactId>flink-clients</artifactId>
+        <version>1.17.2</version>
+    </dependency>
+</dependencies>
+```
+
+```java
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class WaterSensor {
+    /**
+     * 水位传感器类型
+     */
+    private String id;
+    /**
+     * 水位传感器记录时间戳
+     */
+    private Long ts;
+    /**
+     * 水位记录
+     */
+    private Integer vc;
+}
+```
+
+#### 从集合中读取
+
+```java
+public class FromCollection {
+    public static void main(String[] args) throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
+        // 从集合中接收数据
+        // DataStreamSource<Integer> source = env.fromCollection(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 0));
+
+        // 直接写数据
+        DataStreamSource<Integer> source = env.fromElements(1, 2, 3, 4, 5, 6, 7, 8, 9, 0);
+
+        source.print();
+
+        env.execute();
+    }
+}
+```
+
+#### 从文件中读取
+
+```xml
+
+<dependencies>
+    <dependency>
+        <groupId>org.apache.flink</groupId>
+        <artifactId>flink-connector-files</artifactId>
+        <version>1.17.2</version>
+    </dependency>
+</dependencies>
+```
+
+```java
+public class FromFile {
+    public static void main(String[] args) throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
+        // 从文件中读
+        FileSource<String> source = FileSource.forRecordStreamFormat(new TextLineInputFormat(), new Path("C:\\work\\java-workspace\\material\\hadoop-demo\\src\\main\\java\\com\\maple\\flink\\source\\word.txt")).build();
+        DataStreamSource<String> fromFile = env.fromSource(source, WatermarkStrategy.noWatermarks(), "fromFile");
+        fromFile.print();
+
+        env.execute();
+    }
+}
+```
+
+#### 从Kafka中读取
+
+```xml
+
+<dependencies>
+    <dependency>
+        <groupId>org.apache.flink</groupId>
+        <artifactId>flink-connector-files</artifactId>
+        <version>1.17.2</version>
+    </dependency>
+</dependencies>
+```
