@@ -32,10 +32,15 @@
             <scope>test</scope>
         </dependency>
 
+        <!--        <dependency>-->
+        <!--            <groupId>org.apache.kafka</groupId>-->
+        <!--            <artifactId>kafka_2.13</artifactId>-->
+        <!--            <version>3.4.0</version>-->
+        <!--        </dependency>-->
         <dependency>
             <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka_2.13</artifactId>
-            <version>3.4.0</version>
+            <artifactId>kafka-clients</artifactId>
+            <version>3.6.1</version>
         </dependency>
 
 

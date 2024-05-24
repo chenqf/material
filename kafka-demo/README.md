@@ -34,40 +34,80 @@
 + 运营指标
 + 流式处理
 
+## 单机启动
+
+**启动zookeeper**
+
+```shell
+mkdir -p $KAFKA_HOME/data
+vim $KAFKA_HOME/conf/zookeeper.properties
+
+# 修改数据目录位置
+# dataDir=/opt/software/kafka_2.12-3.6.1/data/zk
+cd ../bin
+
+sh zookeeper-server-start.sh ../config/zookeeper.properties
+```
+
+**启动kafka**
+
+```shell
+mkdir -p $KAFKA_HOME/data
+vim $KAFKA_HOME/conf/server.properties
+
+# 修改数据目录位置
+# log.dirs=/opt/software/kafka_2.12-3.6.1/data/kafka
+
+cd ../bin
+sh kafka-server-start.sh ../config/server.properties
+```
+
+**JPS检查**
+
+```shell
+jps
+# 2617501 QuorumPeerMain # Zookeeper
+# 2621290 Jps
+# 2619753 Kafka
+```
+
+**关闭:** 先关Kafka再关Zookeeper
+
 ## 简单收发消息
 
 ![image-20230816153616472](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230816153616472.png)
 
 ```shell
 # 查看所有topic
-kafka-topics.sh --list  --bootstrap-server kafka-standalone:9092
+./bin/kafka-topics.sh --list  --bootstrap-server <hostname>:9092
 # 创建topic
-# --create：创建主题的标志。
 # --topic：要创建的主题的名称。
 # --partitions：主题的分区数。
 # --replication-factor：每个分区的副本数。
-kafka-topics.sh --create --topic test --bootstrap-server kafka-standalone:9092
+./bin/kafka-topics.sh --create --topic <topic-name> --bootstrap-server <hostname>:9092
 # 删除topic
-kafka-topics.sh --delete --topic test --bootstrap-server kafka-standalone:9092
+./bin/kafka-topics.sh --delete --topic <topic-name> --bootstrap-server <hostname>:9092
 # 查看topic
-kafka-topics.sh --describe --topic test --bootstrap-server kafka-standalone:9092 
+./bin/kafka-topics.sh --describe --topic <topic-name> --bootstrap-server <hostname>:9092 
 ```
 
 ```shell
 # 作为Producer
-kafka-console-producer.sh --bootstrap-server kafka-standalone:9092 --topic test
+./bin/kafka-console-producer.sh --bootstrap-server :9092 --topic test
+```
 
+```shell
 # 作为Consumer - 只能接收监听后生产的消息 - 每个消费者都会收到消息
-kafka-console-consumer.sh --bootstrap-server kafka-standalone:9092 --topic test
+./bin/kafka-console-consumer.sh --bootstrap-server <hostname>:9092 --topic test
 # 作为Consumer - 从头接收消息
-kafka-console-consumer.sh --bootstrap-server kafka-standalone:9092 --from-beginning --topic test
+./bin/kafka-console-consumer.sh --bootstrap-server <hostname>:9092 --from-beginning --topic test
 # 作为Consumer - 从0分区中的第N个位置获取消息
-kafka-console-consumer.sh --bootstrap-server kafka-standalone:9092 --partition 0 --offset 4 --topic test
+./bin/kafka-console-consumer.sh --bootstrap-server <hostname>:9092 --partition 0 --offset 4 --topic test
 # 作为Consumer - 分组消息, 每组中只有一个消费者能收到消息
-kafka-console-consumer.sh --bootstrap-server kafka-standalone:9092 --topic test --consumer-property group.id=testGroup
+./bin/kafka-console-consumer.sh --bootstrap-server <hostname>:9092 --topic test --consumer-property group.id=testGroup
 
 # 查看消费者组的情况
-kafka-consumer-groups.sh --bootstrap-server kafka-standalone:9092 --describe --group testGroup
+./bin/kafka-consumer-groups.sh --bootstrap-server <hostname>:9092 --describe --group testGroup
 ```
 
 + 每个单独消费者和每个消费组都会收到消息
