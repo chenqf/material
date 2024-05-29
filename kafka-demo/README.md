@@ -44,7 +44,7 @@ vim $KAFKA_HOME/conf/zookeeper.properties
 
 # 修改数据目录位置
 # dataDir=/opt/software/kafka_2.12-3.6.1/data/zk
-cd ../bin
+cd $KAFKA_HOME/bin
 
 sh zookeeper-server-start.sh ../config/zookeeper.properties
 ```
@@ -58,7 +58,7 @@ vim $KAFKA_HOME/conf/server.properties
 # 修改数据目录位置
 # log.dirs=/opt/software/kafka_2.12-3.6.1/data/kafka
 
-cd ../bin
+cd $KAFKA_HOME/bin
 sh kafka-server-start.sh ../config/server.properties
 ```
 
@@ -93,7 +93,7 @@ jps
 
 ```shell
 # 作为Producer
-./bin/kafka-console-producer.sh --bootstrap-server :9092 --topic test
+./bin/kafka-console-producer.sh --bootstrap-server <hostname>:9092 --topic test
 ```
 
 ```shell
@@ -124,7 +124,7 @@ jps
 + Consumer Group: 一个Consumer Group包含多个Consumer
 + Topic(逻辑概念): 一种类别, 每条消息都有一个类别, 不同消息分开存储
 + Partition: topic物理上的分组, 一个topic可以分为多个partition, 每个partition是一个有序的队列
-+ Replicas: 每一个分区, 会有N个副本
++ Replicas: 每一个分区, 会有N个副本, <= broker number - 1
 + Segment: partition无力上由多个segment组成, 每个Segment存着message消息
 
 ![image-20230816160252884](https://chenqf-blog-image.oss-cn-beijing.aliyuncs.com/images/image-20230816160252884.png)

@@ -386,8 +386,12 @@ public class FromFile {
 <dependencies>
     <dependency>
         <groupId>org.apache.flink</groupId>
-        <artifactId>flink-connector-files</artifactId>
+        <artifactId>flink-connector-kafka</artifactId>
         <version>1.17.2</version>
     </dependency>
 </dependencies>
+```
+
+```java
+
 ```
