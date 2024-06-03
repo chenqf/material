@@ -310,27 +310,6 @@ public class EnvDemo {
 </dependencies>
 ```
 
-```java
-
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class WaterSensor {
-    /**
-     * 水位传感器类型
-     */
-    private String id;
-    /**
-     * 水位传感器记录时间戳
-     */
-    private Long ts;
-    /**
-     * 水位记录
-     */
-    private Integer vc;
-}
-```
-
 #### 从集合中读取
 
 ```java
@@ -393,5 +372,279 @@ public class FromFile {
 ```
 
 ```java
+public class FromKafka {
+    public static void main(String[] args) throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        env.setParallelism(1);
+        env.setRuntimeMode(RuntimeExecutionMode.STREAMING);
+        // 从Kafka中读
+        KafkaSource<String> kafkaSource = KafkaSource.<String>builder()
+                .setBootstrapServers("62.234.18.108:9092")  // 必填：指定broker连接信息 (为保证高可用,建议多指定几个节点)
+                .setGroupId("chenqf-kafka-group")  // 必填：指定消费者的groupid(不存在时会自动创建)
+                .setTopics("demoTopic1") // 必填：指定要消费的topic
+                .setValueOnlyDeserializer(new SimpleStringSchema()) // 必填：指定反序列化器(用来解析kafka消息数据)
+                .setStartingOffsets(OffsetsInitializer.latest())// 起始位置 默认:earliest 一定从最早开始 latest 一定从最新消费 (与Kafka不一致)
+                .build();
 
+        DataStreamSource<String> fromKafka = env.fromSource(kafkaSource, WatermarkStrategy.noWatermarks(), "fromKafka");
+        fromKafka.print();
+
+        env.execute();
+    }
+}
+```
+
+#### 数据生成器 - 测试 - 压测
+
+```xml
+
+<dependencies>
+    <dependency>
+        <groupId>org.apache.flink</groupId>
+        <artifactId>flink-connector-datagen</artifactId>
+        <version>1.17.2</version>
+    </dependency>
+</dependencies>
+```
+
+```java
+public class FromDataGen {
+    public static void main(String[] args) throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
+        // 如果有多个并行度, 将数值均分成n份
+        env.setParallelism(2);
+        /**
+         * 数据生成器
+         * 参数:
+         * 1. GeneratorFunction接口, 重写map方法, 输入类型固定是Long
+         * 2. Long类型, 自动生成的数字序列, 从1自增
+         * 3. 限速策略, eg: 每秒几条
+         * 4. 返回的类型
+         */
+        DataGeneratorSource<String> source = new DataGeneratorSource<>(
+                // GeneratorFunction接口, 重写map方法, 输入类型固定是Long
+                new GeneratorFunction<Long, String>() {
+                    private static final long serialVersionUID = 7096925423962680215L;
+
+                    @Override
+                    public String map(Long value) throws Exception {
+                        return "Number" + value;
+                    }
+                },
+                10, // Long类型, 自动生成的数字序列, 从0自增 Long.MAX_VALUE : 实现无界流
+                RateLimiterStrategy.perSecond(1), // 限速策略, eg: 每秒几条
+                Types.STRING // 返回的类型
+        );
+
+        env.fromSource(source, WatermarkStrategy.noWatermarks(), "data-generator").print();
+
+        env.execute();
+
+        env.close();
+    }
+}
+```
+
+### 转换算子
+
+```java
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class WaterSensor {
+    /**
+     * 水位传感器类型
+     */
+    private String id;
+    /**
+     * 水位传感器记录时间戳
+     */
+    private Long ts;
+    /**
+     * 水位记录
+     */
+    private Integer vc;
+}
+```
+
+#### map 一一映射
+
+```java
+public class MapDemo {
+    public static void main(String[] args) throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        env.setParallelism(1);
+
+        DataStreamSource<WaterSensor> sensorDS = env.fromElements(
+                new WaterSensor("s1", 1L, 1),
+                new WaterSensor("s2", 2L, 2),
+                new WaterSensor("s3", 3L, 3)
+        );
+
+        // 方式一: 匿名内部类 将WaterSensor转换为String:WaterSensor.getId()
+//        SingleOutputStreamOperator<String> map = sensorDS.map(new MapFunction<WaterSensor, String>() {
+//            private static final long serialVersionUID = -8875810405517918745L;
+//
+//            @Override
+//            public String map(WaterSensor value) throws Exception {
+//                return value.getId();
+//            }
+//        });
+
+        // 方式二: lambda表达式 将WaterSensor转换为String:WaterSensor.getId()
+        SingleOutputStreamOperator<String> map = sensorDS.map(WaterSensor::getId);
+
+        map.print();
+
+        env.execute();
+    }
+}
+```
+
+#### filter 过滤
+
+```java
+public class FilterDemo {
+    public static void main(String[] args) throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        env.setParallelism(1);
+
+        DataStreamSource<WaterSensor> sensorDS = env.fromElements(
+                new WaterSensor("s1", 1L, 1),
+                new WaterSensor("s2", 2L, 2),
+                new WaterSensor("s3", 3L, 3)
+        );
+
+        SingleOutputStreamOperator<WaterSensor> filter = sensorDS.filter(value -> "s1".equals(value.getId()));
+
+        filter.print();
+
+        env.execute();
+    }
+}
+```
+
+#### flatMap 扁平映射 - 一进多出
+
+```java
+ // 如果输入是 s1 , 打印 vc, 如果是 s2 打印 vc ts
+public class FlatMapDemo {
+    public static void main(String[] args) throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        env.setParallelism(1);
+
+        DataStreamSource<WaterSensor> sensorDS = env.fromElements(
+                new WaterSensor("s1", 1L, 1),
+                new WaterSensor("s1", 11L, 11),
+                new WaterSensor("s2", 2L, 2),
+                new WaterSensor("s2", 22L, 22)
+        );
+
+        // 方式一: 匿名内部类
+        SingleOutputStreamOperator<String> flatMap = sensorDS.flatMap(new FlatMapFunction<WaterSensor, String>() {
+            private static final long serialVersionUID = -8403006960028838517L;
+
+            @Override
+            public void flatMap(WaterSensor waterSensor, Collector<String> out) throws Exception {
+                if ("s1".equals(waterSensor.getId())) {
+                    out.collect(waterSensor.getVc().toString());
+                } else if ("s2".equals(waterSensor.getId())) {
+                    out.collect(waterSensor.getVc().toString());
+                    out.collect(waterSensor.getTs().toString());
+                }
+            }
+        });
+
+
+        flatMap.print();
+
+        env.execute();
+    }
+}
+
+```
+
+### 聚合算子 Aggregation
+
+计算结果不仅依赖当前数据, 还和执勤啊数据有关, 相当于把所有数据聚在一起
+
+#### keyBy 按键分区
+
+要聚合, 需要先分区, 通过key将流从逻辑上划分为不同的分区(partition)
+
+keyBy: 对数据分组, 保证相同key的数据, 在同一个分区
+分区: 一个子任务, 可以理解为一个分区, `一个分区可以有多个分组`
+
+```java
+// 按照Id进行分组
+public class KeyByDemo {
+    public static void main(String[] args) throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        env.setParallelism(2);
+
+        DataStreamSource<WaterSensor> sensorDS = env.fromElements(
+                new WaterSensor("s1", 1L, 1),
+                new WaterSensor("s2", 2L, 2),
+                new WaterSensor("s3", 3L, 3),
+                new WaterSensor("s4", 4L, 4)
+        );
+
+        // 按照Id进行分组
+        // 不是转换算子, 只是重分区, 不能设置并行度
+        KeyedStream<WaterSensor, String> keyBy = sensorDS.keyBy(new KeySelector<WaterSensor, String>() {
+            private static final long serialVersionUID = -8029649922091486537L;
+
+            @Override
+            public String getKey(WaterSensor waterSensor) throws Exception {
+                return waterSensor.getId();
+            }
+        });
+
+        keyBy.print();
+
+        env.execute();
+    }
+}
+```
+
+#### sum / min / max / minBy / maxBy
+
+必须和 keyBy 成对出现
+
+max/maxBy :
+
++ max只会取比较字段的最大值
++ maxBy不仅取比较字段的最大值,同时非比较字段取最大值这表数据的值
+
+min/minBy : 同理
+
+```java
+public class SimpleDemo {
+    public static void main(String[] args) throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        env.setParallelism(1);
+
+        DataStreamSource<WaterSensor> sensorDS = env.fromElements(
+                new WaterSensor("s1", 1L, 1),
+                new WaterSensor("s1", 2L, 2),
+                new WaterSensor("s2", 3L, 3),
+                new WaterSensor("s3", 4L, 4),
+                new WaterSensor("s3", 5L, 5)
+        );
+        KeyedStream<WaterSensor, String> keyBy = sensorDS.keyBy(new KeySelector<WaterSensor, String>() {
+            private static final long serialVersionUID = -8029649922091486537L;
+
+            @Override
+            public String getKey(WaterSensor waterSensor) throws Exception {
+                return waterSensor.getId();
+            }
+        });
+
+        keyBy.sum("vc").print();
+
+        env.execute();
+    }
+}
 ```

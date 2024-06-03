@@ -16,10 +16,10 @@ public class FromKafka {
         env.setRuntimeMode(RuntimeExecutionMode.STREAMING);
         // 从Kafka中读
         KafkaSource<String> kafkaSource = KafkaSource.<String>builder()
-                .setBootstrapServers("62.234.18.108:9092")
-                .setGroupId("chenqf-kafka-group") // 消费者组
-                .setTopics("demoTopic1") // topic
-                .setValueOnlyDeserializer(new SimpleStringSchema()) // 反序列化
+                .setBootstrapServers("62.234.18.108:9092")  // 必填：指定broker连接信息 (为保证高可用,建议多指定几个节点)
+                .setGroupId("chenqf-kafka-group")  // 必填：指定消费者的groupid(不存在时会自动创建)
+                .setTopics("demoTopic1") // 必填：指定要消费的topic
+                .setValueOnlyDeserializer(new SimpleStringSchema()) // 必填：指定反序列化器(用来解析kafka消息数据)
                 .setStartingOffsets(OffsetsInitializer.latest())// 起始位置 默认:earliest 一定从最早开始 latest 一定从最新消费 (与Kafka不一致)
                 .build();
 
@@ -27,25 +27,5 @@ public class FromKafka {
         fromKafka.print();
 
         env.execute();
-
-//        // 1.获取执行环境
-//        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-//
-//        // 2.读取kafka数据
-//        KafkaSource<String> source = KafkaSource.<String>builder()
-//                .setBootstrapServers("62.234.18.108:9092")               // 必填：指定broker连接信息 (为保证高可用,建议多指定几个节点)
-//                .setTopics("demoTopic1")                              // 必填：指定要消费的topic
-//                .setGroupId("FlinkConsumer")                        // 必填：指定消费者的groupid(不存在时会自动创建)
-//                .setValueOnlyDeserializer(new SimpleStringSchema()) // 必填：指定反序列化器(用来解析kafka消息数据)
-//                .setStartingOffsets(OffsetsInitializer.latest())  // 可选：指定启动任务时的消费位点（不指定时，将默认使用 OffsetsInitializer.earliest()）
-//                .build();
-//
-//        DataStreamSource<String> fromKafka = env.fromSource(source,
-//                WatermarkStrategy.noWatermarks(),
-//                "Kafka Source");
-//        fromKafka.print();
-//
-//        // 3.触发程序执行
-//        env.execute();
     }
 }
