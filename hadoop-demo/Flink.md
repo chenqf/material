@@ -648,3 +648,114 @@ public class SimpleDemo {
     }
 }
 ```
+
+#### reduce 两两聚合
+
+keyBy 之后才能调用, 两两聚合(输出类型 = 输入类型)
+
+```java
+public class ReduceDemo {
+  public static void main(String[] args) throws Exception {
+    StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+    env.setParallelism(1);
+
+    DataStreamSource<WaterSensor> sensorDS = env.fromElements(
+            new WaterSensor("s1", 1L, 1),
+            new WaterSensor("s1", 2L, 2),
+            new WaterSensor("s2", 3L, 3),
+            new WaterSensor("s3", 4L, 4),
+            new WaterSensor("s3", 5L, 5)
+    );
+    KeyedStream<WaterSensor, String> keyBy = sensorDS.keyBy(new KeySelector<WaterSensor, String>() {
+      private static final long serialVersionUID = -8029649922091486537L;
+
+      @Override
+      public String getKey(WaterSensor waterSensor) throws Exception {
+        return waterSensor.getId();
+      }
+    });
+
+    // 每个keyBy分组第一条数据, 不会进入reduce回调中
+    keyBy.reduce(new ReduceFunction<WaterSensor>() {
+      private static final long serialVersionUID = 8537726912908479085L;
+
+      // prev: 之前的计算结果
+      // current: 当前记录
+      @Override
+      public WaterSensor reduce(WaterSensor prev, WaterSensor current) throws Exception {
+        System.out.println("prev:" + prev);
+        System.out.println("current:" + current);
+        return new WaterSensor(prev.getId(), prev.getTs() + current.getTs(), prev.getVc() + current.getVc());
+      }
+    }).print();
+
+    env.execute();
+  }
+}
+```
+
+### 富函数
+
+存在声明周期方法, 子任务级别, 有几个子任务则执行几次
+
++ open
++ close
+  + 无界流, 流断开, 调用close
+  + 正常调用cancel, 调用close
+  + Flink程序异常, 不调用close
+
+> 程序处理数据前调用open, 程序处理数据后调用close
+
+```java
+public class RichFunctionDemo {
+  public static void main(String[] args) throws Exception {
+
+    /**
+     * RichXxxFunction : 富函数
+     * 1. 多了生命周期管理函数
+     *      open() : 每个子任务, 在启动时调用一次
+     *      close() : 每个子任务, 在结束时调用一次
+     * 2. 多了一个运行时上下文
+     *      可以获取一些运行时的环境信息, 比如: 子任务编号/名称/....
+     */
+    StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+    env.setParallelism(1);
+
+    DataStreamSource<Integer> source = env.fromElements(1, 2, 3, 4, 5, 6);
+
+    SingleOutputStreamOperator<Integer> map = source.map(new RichMapFunction<Integer, Integer>() {
+      @Override
+      public void open(Configuration parameters) throws Exception {
+        super.open(parameters);
+
+        RuntimeContext runtimeContext = getRuntimeContext();
+        int indexOfThisSubtask = runtimeContext.getIndexOfThisSubtask();
+        String taskNameWithSubtasks = runtimeContext.getTaskNameWithSubtasks();
+        System.out.println("indexOfThisSubtask = " + indexOfThisSubtask + "subTask Name=" + taskNameWithSubtasks + ", launch open()");
+      }
+
+      @Override
+      public void close() throws Exception {
+        super.close();
+        RuntimeContext runtimeContext = getRuntimeContext();
+        int indexOfThisSubtask = runtimeContext.getIndexOfThisSubtask();
+        String taskNameWithSubtasks = runtimeContext.getTaskNameWithSubtasks();
+        System.out.println("indexOfThisSubtask = " + indexOfThisSubtask + "subTask Name=" + taskNameWithSubtasks + ", launch close()");
+      }
+
+      @Override
+      public Integer map(Integer integer) throws Exception {
+        return integer;
+      }
+
+      private static final long serialVersionUID = -1345222016387322730L;
+    });
+
+    map.print();
+    env.execute();
+  }
+}
+```
+
+### 分区算子
+
